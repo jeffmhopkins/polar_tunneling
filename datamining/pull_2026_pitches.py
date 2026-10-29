@@ -17,10 +17,11 @@ Columns (with units where applicable):
 
 Usage:
     pip install pybaseball pandas
-    python pull_2026_pitches.py
+    python datamining/pull_2026_pitches.py   # from the repo root
 """
 
 import pandas as pd
+from pathlib import Path
 from pybaseball import statcast, cache
 
 # Enable caching so large queries can be resumed if interrupted
@@ -28,8 +29,8 @@ cache.enable()
 
 # Date range for the 2026 regular season (approximate; adjust as needed)
 START_DATE = "2026-03-20"
-END_DATE = "2026-10-01"
-OUTPUT_PATH = "datamining/pitches_2026.csv"
+END_DATE = "2026-11-05"  # through the postseason; filter on game_type
+OUTPUT_DIR = Path("datamining/outputs")  # monthly files, same layout as 2025
 
 # Columns needed for trajectory work and identification
 COLUMNS = [
@@ -126,8 +127,14 @@ def main():
     # Add units to column names
     df = df.rename(columns=RENAME)
 
-    print(f"Writing {len(df):,} pitches to {OUTPUT_PATH}")
-    df.to_csv(OUTPUT_PATH, index=False)
+    # One file per month (pitches_2026_MM.csv), like the 2025 outputs, so
+    # pitch_averages.py and model/ read both seasons the same way.
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    month = pd.to_datetime(df["game_date"]).dt.month
+    for m, part in df.groupby(month):
+        path = OUTPUT_DIR / f"pitches_2026_{m:02d}.csv"
+        part.to_csv(path, index=False)
+        print(f"Wrote {len(part):,} pitches to {path}")
     print("Done.")
 
 if __name__ == "__main__":

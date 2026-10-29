@@ -17,9 +17,10 @@ against a null that shuffles the tunnel features between groups of the same
 pitch type.
 
 Usage:
-    python model/arsenal.py            # writes model/arsenal_report.md
+    python model/arsenal.py [--year 2026]   # writes model/arsenal_report[_YEAR].md
 """
 
+import argparse
 from pathlib import Path
 
 import lightgbm as lgb
@@ -70,7 +71,11 @@ def fit(tr, te, y, cols):
     return log_loss(te[y].astype(int), m.predict(te[cols]))
 
 def main():
-    df = F.build(2025)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--year", type=int, default=2025)
+    year = parser.parse_args().year
+    out = OUT if year == 2025 else OUT.with_name(f"arsenal_report_{year}.md")
+    df = F.build(year)
     df = df[df.release_spin_rate_rpm.notna()]
     g = group_table(df[df.month <= 7])
     for c in ["pitch_type", "stand"]:
@@ -79,7 +84,7 @@ def main():
     d = df.merge(g.drop(columns="n"), on=["pitcher", "stand", "pitch_type"])
     for c in ["pitch_type", "stand", "p_throws"]:
         d[c] = d[c].astype("category")
-    lines = ["# Arsenal tunnel check (2025, vs primary fastball)", "",
+    lines = [f"# Arsenal tunnel check ({year}, vs primary fastball)", "",
              f"{len(g):,} pitcher x pitch type x side groups (>= {MIN_N} pitches Mar-Jul), "
              f"{len(d):,} pitches. Group features from Mar-Jul; test on Aug-Oct.", ""]
     rng = np.random.default_rng(S.SEED)
@@ -121,7 +126,7 @@ def main():
     q = r.groupby("dec_q", observed=True).agg(groups=("resid", "size"), resid_whiff_pct=("resid", lambda x: x.mean() * 100))
     lines += ["Mean residual whiff/swing (pct points) by quartile of commit-point angle to the fastball:", "",
               q.round(2).to_markdown(), ""]
-    OUT.write_text("\n".join(lines) + "\n")
+    out.write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
 if __name__ == "__main__":
