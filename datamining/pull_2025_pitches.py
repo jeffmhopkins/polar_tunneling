@@ -2,7 +2,7 @@
 Pull 2025 pitch-level Statcast data via pybaseball and write selected columns to CSV.
 
 Intended as the primary training set for the polar tunneling model.
-Pitcher-focused only (batter ID removed).
+Includes batter, count and context columns for the tunnel score.
 
 Columns (with units where applicable):
 - pitcher (MLBAM ID)
@@ -12,6 +12,8 @@ Columns (with units where applicable):
 - plate_x_ft, plate_z_ft
 - description (per-pitch outcome)
 - events (plate-appearance outcome)
+- batter, stand, count, catcher, zone, movement, spin, contact quality and
+  run value (see add_context.py for the full list)
 
 Usage:
     pip install pybaseball pandas
@@ -54,6 +56,33 @@ COLUMNS = [
     "vx0",
     "vy0",
     "vz0",
+    # Batter, count and context for the tunnel score (see add_context.py)
+    "batter",
+    "stand",
+    "p_throws",
+    "balls",
+    "strikes",
+    "outs_when_up",
+    "inning",
+    "inning_topbot",
+    "on_1b",
+    "on_2b",
+    "on_3b",
+    "fielder_2",
+    "game_type",
+    "zone",
+    "sz_top",
+    "sz_bot",
+    "pfx_x",
+    "pfx_z",
+    "release_spin_rate",
+    "spin_axis",
+    "release_extension",
+    "launch_speed",
+    "launch_angle",
+    "estimated_woba_using_speedangle",
+    "woba_value",
+    "delta_run_exp",
 ]
 
 # Rename to include units
@@ -70,6 +99,17 @@ RENAME = {
     "vx0": "vx0_ft_s",
     "vy0": "vy0_ft_s",
     "vz0": "vz0_ft_s",
+    "fielder_2": "catcher",
+    "sz_top": "sz_top_ft",
+    "sz_bot": "sz_bot_ft",
+    "pfx_x": "pfx_x_ft",
+    "pfx_z": "pfx_z_ft",
+    "release_spin_rate": "release_spin_rate_rpm",
+    "spin_axis": "spin_axis_deg",
+    "release_extension": "release_extension_ft",
+    "launch_speed": "launch_speed_mph",
+    "launch_angle": "launch_angle_deg",
+    "estimated_woba_using_speedangle": "xwoba",
 }
 
 def main():

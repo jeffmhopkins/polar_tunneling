@@ -33,7 +33,7 @@ KEYS = ["game_pk", "at_bat_number", "pitch_number"]
 VEL = {"vx0": "vx0_ft_s", "vy0": "vy0_ft_s", "vz0": "vz0_ft_s"}
 OUTPUT_DIR = Path("datamining/outputs")
 
-def pull_day(day):
+def pull_day(day, cols):
     for attempt in range(4):
         try:
             r = requests.get(URL.format(d=day), timeout=180)
@@ -41,48 +41,53 @@ def pull_day(day):
             text = r.content.decode("utf-8-sig")
             if len(text) < 50:
                 return None
-            return pd.read_csv(io.StringIO(text), usecols=KEYS + list(VEL), dtype=str)
+            return pd.read_csv(io.StringIO(text), usecols=KEYS + list(cols), dtype=str)
         except Exception as e:
             print(f"{day}: retry after {e}")
             time.sleep(2**attempt)
     raise RuntimeError(f"Could not pull {day}")
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--year", type=int, required=True)
-    args = parser.parse_args()
-
-    files = sorted(OUTPUT_DIR.glob(f"pitches_{args.year}_*.csv"))
+def add_columns(year, cols):
+    """Pull the Savant columns in `cols` for every day of `year` and append them,
+    renamed to cols' values, to that year's monthly pitch CSVs."""
+    files = sorted(OUTPUT_DIR.glob(f"pitches_{year}_*.csv"))
     dates = pd.concat([pd.read_csv(f, usecols=["game_date"]) for f in files]).game_date
     start, end = dt.date.fromisoformat(dates.min()), dt.date.fromisoformat(dates.max())
     days = [str(start + dt.timedelta(i)) for i in range((end - start).days + 1)]
 
     with ThreadPoolExecutor(4) as ex:
-        frames = [f for f in ex.map(pull_day, days) if f is not None]
-    vel = pd.concat(frames).drop_duplicates(KEYS)
-    lookup = {tuple(int(float(k)) for k in row[:3]): row[3:] for row in vel[KEYS + list(VEL)].itertuples(index=False)}
-    print(f"Pulled velocities for {len(lookup):,} pitches")
+        frames = [f for f in ex.map(lambda d: pull_day(d, cols), days) if f is not None]
+    pulled = pd.concat(frames).drop_duplicates(KEYS).fillna("")
+    n = len(cols)
+    lookup = {tuple(int(float(k)) for k in row[:3]): row[3:] for row in pulled[KEYS + list(cols)].itertuples(index=False)}
+    print(f"Pulled {', '.join(cols)} for {len(lookup):,} pitches")
 
     # Append columns as text so the existing columns stay byte-for-byte unchanged.
     for f in files:
         with open(f, newline="") as fh:
             rows = list(csv.reader(fh))
         header = rows[0]
-        if VEL["vx0"] in header:
-            print(f"{f} already has velocities")
+        if next(iter(cols.values())) in header:
+            print(f"{f} already has these columns")
             continue
         idx = [header.index(k) for k in KEYS]
         missing = 0
-        out = [header + list(VEL.values())]
+        out = [header + list(cols.values())]
         for row in rows[1:]:
             v = lookup.get(tuple(int(float(row[i])) for i in idx))
             if v is None:
                 missing += 1
-                v = ("", "", "")
+                v = ("",) * n
             out.append(row + list(v))
         with open(f, "w", newline="") as fh:
             csv.writer(fh, lineterminator="\n").writerows(out)
-        print(f"{f}: {len(rows) - 1:,} pitches, {missing} without velocities")
+        print(f"{f}: {len(rows) - 1:,} pitches, {missing} not found in the pull")
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--year", type=int, required=True)
+    args = parser.parse_args()
+    add_columns(args.year, VEL)
 
 if __name__ == "__main__":
     main()
