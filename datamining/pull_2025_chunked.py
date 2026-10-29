@@ -46,6 +46,9 @@ COLUMNS = [
     "game_pk",
     "at_bat_number",
     "pitch_number",
+    "vx0",
+    "vy0",
+    "vz0",
 ]
 
 RENAME = {
@@ -58,6 +61,9 @@ RENAME = {
     "release_speed": "release_speed_mph",
     "plate_x": "plate_x_ft",
     "plate_z": "plate_z_ft",
+    "vx0": "vx0_ft_s",
+    "vy0": "vy0_ft_s",
+    "vz0": "vz0_ft_s",
 }
 
 def process_chunk(start, end):
