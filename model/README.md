@@ -34,3 +34,21 @@ previous pitch in the same plate appearance (see the tunnel score proposal).
    the other half of games (r = 0.015).
 
 The sequence tunnel score fails the go/no-go as designed.
+
+## Arsenal check (2025, vs primary fastball)
+
+`arsenal.py` tests the explorer's comparison across pitchers. Each pitcher x
+pitch type x side's average path is compared with his primary fastball, using
+features from Mar-Jul, and the test runs on Aug-Oct with fastball differentials
+(speed, movement, release) in the controls. It writes `arsenal_report.md`.
+
+- **Whiff/swing:** +0.41 per 1000 log-loss, beating all 10 null draws (null
+  max 0.32). That is small but above noise.
+- **Swing and CSW:** no gain.
+- **Group level:** the direction matches tunneling. Pitch types closest to the
+  fastball at the commit point whiff 1.5 pct points more than predicted (top
+  quartile), against about 0 for the farthest quartile. But the rank
+  correlation is only -0.08 over 364 groups (p of about 0.12).
+
+This is a weak, suggestive signal for whiffs. It needs a true out-of-season
+test on 2026 before it can carry a score.
