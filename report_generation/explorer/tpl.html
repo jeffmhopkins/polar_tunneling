@@ -1,0 +1,655 @@
+<title>Pitch Tunnel Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a scoreboard-style header, then a two-column workbench (3D field + hitter's-eye panel) above a league-wide scatter and leaderboard. */
+:root{
+  --bg:#eef1ee; --panel:#f8faf7; --ink:#15211b; --muted:#56645c; --line:#cfd8d1; --accent:#1f5aa6; --field:#dfe8df; --chalk:#ffffff;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --scene:#e4ebe4; --grass:#c9d8c6; --dirt:#d8c7ae;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1512; --panel:#151e1a; --ink:#e3ece6; --muted:#93a39a; --line:#2a3832; --accent:#7fb0f0; --field:#1b2722; --chalk:#e8efe9;
+  --scene:#111a16; --grass:#1d2c24; --dirt:#3a3227; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1512; --panel:#151e1a; --ink:#e3ece6; --muted:#93a39a; --line:#2a3832; --accent:#7fb0f0; --field:#1b2722; --chalk:#e8efe9;
+  --scene:#111a16; --grass:#1d2c24; --dirt:#3a3227; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,46px);line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.sub{color:var(--muted);max-width:68ch;margin:6px 0 0}
+h2{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:4px;min-width:0}
+select,input[type=search]{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;background:var(--panel);color:var(--ink);border:0;padding:6px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.btn{font:inherit;font-size:13px;background:var(--accent);color:var(--bg);border:0;border-radius:4px;padding:7px 12px;cursor:pointer;font-weight:600}
+input[type=range]{accent-color:var(--accent);width:150px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bench{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panehead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+#scene{position:relative;width:100%;aspect-ratio:16/10;max-width:100%;border-radius:4px;overflow:hidden;background:var(--scene)}
+#scene canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+#scene{user-select:none;-webkit-user-select:none}
+#glerr[hidden]{display:none}
+#glerr{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:var(--muted)}
+#eye{width:100%;aspect-ratio:1/1;max-width:100%;display:block;background:var(--scene);border-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:3px 10px 3px 6px;cursor:pointer;font-family:var(--mono)}
+.chip[aria-pressed=false]{opacity:.45}
+.sw{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--field)}
+.ref{font-size:10px;font-weight:600;letter-spacing:.06em;border:1px solid var(--muted);color:var(--muted);border-radius:3px;padding:0 4px;margin-left:4px}
+.league{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.league{grid-template-columns:minmax(0,1fr)}}
+#scatter{width:100%;aspect-ratio:4/3;max-width:100%;display:block;cursor:crosshair}
+.note{color:var(--muted);font-size:13px;max-width:75ch;margin:0}
+.caveats{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 24px;margin:0;padding:0;list-style:none}
+.caveats li{border-top:1px solid var(--line);padding-top:8px;font-size:13px;color:var(--muted)}
+.caveats b{color:var(--ink);font-weight:600}
+a{color:var(--accent)}
+.btn.ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.pane.max{position:fixed;inset:0;z-index:50;border-radius:0;border:0;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(12px,env(safe-area-inset-left,0px))}
+.pane.max #scene{aspect-ratio:auto;flex:1;min-height:0}
+body.locked{overflow:hidden}
+.legend3d{position:absolute;left:8px;bottom:8px;font-size:11px;color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);padding:4px 8px;border-radius:4px;pointer-events:none}
+.percep{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.percep{grid-template-columns:minmax(0,1fr)}}
+.percep>div{display:flex;flex-direction:column;gap:8px;min-width:0}
+#snap{width:100%;aspect-ratio:1/1;max-width:100%;display:block;background:var(--scene);border-radius:4px}
+#plate{width:100%;aspect-ratio:1/1;max-width:100%;display:block;background:var(--scene);border-radius:4px}
+.readout{font-size:14px;margin:0;max-width:75ch}
+.scrub{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.scrub input[type=range]{flex:1;min-width:140px;width:auto}
+th.grp{text-align:center;border-bottom:1px solid var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="lbl">polar_tunneling · 2025 Statcast · average pitch per type</div>
+      <h1>Pitch Tunnel Explorer</h1>
+      <p class="sub">Each line is a pitcher's average pitch of one type, rebuilt from Statcast's measured trajectory fit and viewed from the hitter's eye. The ring on each path marks the decision point: where the ball is a set time before the primary fastball would reach the plate.</p>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Controls">
+    <div class="ctl"><label class="lbl" for="find">Find pitcher ID</label><input id="find" type="search" placeholder="e.g. 694335" inputmode="numeric" size="12"></div>
+    <div class="ctl"><label class="lbl" for="pitcher">Pitcher (by 2025 pitches)</label><select id="pitcher"></select></div>
+    <div class="ctl"><span class="lbl">Hitter</span><div class="seg" id="side"><button type="button" data-v="R" aria-pressed="true">RHH</button><button type="button" data-v="L" aria-pressed="false">LHH</button></div></div>
+    <div class="ctl"><label class="lbl" for="dec">Decision point: <span id="decv" class="mono">175</span> ms before plate</label><input id="dec" type="range" min="100" max="300" step="5" value="175"></div>
+  </section>
+
+  <section class="bench">
+    <div class="pane" id="flight">
+      <div class="panehead">
+        <h2>3D flight</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="seg" id="view">
+            <button type="button" data-v="eye" aria-pressed="true">Hitter's eye</button>
+            <button type="button" data-v="catcher" aria-pressed="false">Catcher</button>
+            <button type="button" data-v="side" aria-pressed="false">Side</button>
+            <button type="button" data-v="top" aria-pressed="false">Top</button>
+          </div>
+          <button type="button" class="btn" id="play">Throw</button>
+          <button type="button" class="btn ghost" id="max" aria-pressed="false">Full screen</button>
+        </div>
+      </div>
+      <div id="scene"><div id="glerr" hidden>3D view needs WebGL, which this browser didn't provide. The hitter's-eye panel and tables still work.</div><div class="legend3d"><span id="hint">Drag to look around from the hitter's eye · pinch or scroll to zoom · tap the view again to reset</span></div></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="pane">
+      <div class="panehead"><h2>Hitter's eye</h2><div class="seg" id="span"><button type="button" data-v="early" aria-pressed="true">Early flight</button><button type="button" data-v="full" aria-pressed="false">To the plate</button></div></div>
+      <span class="lbl" id="pinfo"></span>
+      <canvas id="eye" aria-label="Pitch paths as angles seen from the hitter's eye"></canvas>
+      <p class="note">Where the ball appears to the hitter, in degrees from their line of sight to the release point. Every pitch drifts down and toward the plate because the ball drops below eye level and passes in front of the hitter. Rings mark the decision point. "Early flight" stops 50 ms after it; "To the plate" adds the strike zone (dashed), drawn at the front edge of the plate, where each pitch ends.</p>
+    </div>
+  </section>
+
+
+  <section class="pane" id="percep" aria-labelledby="percep-h">
+    <div class="panehead">
+      <h2 id="percep-h">What the hitter sees at the decision</h2>
+      <div class="seg" id="gaze"><button type="button" data-v="track" aria-pressed="true">Eyes on the fastball</button><button type="button" data-v="fixed" aria-pressed="false">Fixed gaze</button></div>
+    </div>
+    <p class="readout" id="readout"></p>
+    <div class="percep">
+      <div>
+        <span class="lbl" id="snaplbl">Snapshot</span>
+        <canvas id="snap" aria-label="Each pitch as the hitter sees it at the decision point: ball at its true apparent size, a trail of the last 100 ms, and an arrow for its apparent motion over the next 50 ms"></canvas>
+        <div class="scrub">
+          <label class="lbl" for="off">Moment: <span id="offv" class="mono">decision point</span></label>
+          <input id="off" type="range" min="-150" max="100" step="5" value="0">
+          <button type="button" class="btn ghost" id="watch">Watch in slow motion</button>
+        </div>
+        <p class="note">Balls are drawn at their true apparent size from the hitter's eye. The tail is the last 100 ms of flight; the arrow is where the ball is heading over the next 50 ms. The dashed cross is the primary fastball. With "Eyes on the fastball" the frame moves with the primary fastball, so every arrow is motion relative to it: what peels off the fastball's path on the hitter's retina. "Fixed gaze" holds the frame on the fastball's decision-point spot and shows each pitch's own motion.</p>
+      </div>
+      <div>
+        <span class="lbl">Fastball read vs. where it actually ends up · catcher's view</span>
+        <canvas id="plate" aria-label="At the front of the plate: where each pitch would arrive if it kept bending like the fastball from the decision point on, against where it actually arrives"></canvas>
+        <p class="note">Hollow ring: where the pitch would cross the front of the plate if, from the decision point on, it kept bending like the primary fastball, which is the hitter's default read. Filled ball: where it actually crosses. The line between them is how much the read is off.</p>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="pctable"><thead>
+      <tr><th></th><th colspan="4" class="grp">At the decision point</th><th colspan="3" class="grp">Fastball read misses by</th></tr>
+      <tr><th>Pitch</th><th>Apparent speed (°/s)</th><th>vs. fastball (°/s)</th><th>Separating (°/s)</th><th>Gap (ball widths)</th><th>Across (in)</th><th>Up/down (in)</th><th>Timing (ms)</th></tr>
+    </thead><tbody></tbody></table></div>
+    <p class="note">Apparent speed is how fast the ball's direction from the eye is changing. Separating is how fast the angle between this pitch and the fastball is growing. The fastball read starts from the pitch's actual position and velocity at the decision point and applies the fastball's acceleration from there; across is + away from the hitter, up/down is − when the pitch finishes below the read, timing is + when it arrives later than the read expects. These are the optical-motion and fastball-prior-miss features from the perceptual model in model/perceptual.py, evaluated on the average pitch.</p>
+  </section>
+
+  <section class="pane">
+    <div class="panehead"><h2>Tunnel vs. primary fastball</h2><a id="savant" target="_blank" rel="noopener">Baseball Savant page</a></div>
+    <div class="tablewrap"><table id="ptable"><thead><tr><th>Pitch</th><th>Usage</th><th>Pitches</th><th>Velo (mph)</th><th>Flight (s)</th><th>Gap at decision (°)</th><th>Gap at decision (in)</th><th>Gap at plate (in)</th><th>Plate in per decision °</th><th>Whiff %</th><th>CSW %</th></tr></thead><tbody></tbody></table></div>
+    <p class="note">Gaps compare each pitch with the pitcher's most-used four-seam, sinker or cutter, at the same time after release. A good tunnel is a small gap at the decision point and a big gap at the plate.</p>
+  </section>
+
+  <section class="league">
+    <div class="pane">
+      <div class="panehead"><h2>All pitchers</h2><span class="lbl">click a dot to load that pitcher</span></div>
+      <canvas id="scatter" aria-label="Scatter of decision-point gap versus plate gap for every secondary pitch"></canvas>
+      <div class="chips" id="legend"></div>
+    </div>
+    <div class="pane">
+      <div class="panehead"><h2>Tightest tunnels</h2><span class="lbl">plate gap ≥ 12 in, 100+ pitches</span></div>
+      <div class="tablewrap"><table id="lb"><thead><tr><th>Pitcher</th><th>Pair</th><th>Decision (°)</th><th>Plate (in)</th><th>Whiff %</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="pane">
+    <h2>What's approximate</h2>
+    <ul class="caveats">
+      <li><b>Average pitches, not real ones.</b> Each path is built from a pitcher's season-average release point, acceleration, speed and plate location for that pitch type, so pitch-to-pitch spread and sequencing aren't shown.</li>
+      <li><b>Paths are Statcast's own fit.</b> Each pitch uses Statcast's 9-parameter constant-acceleration fit (vx0, vy0, vz0, ax, ay, az), run back to the release point and forward to the front edge of the plate. The fit reproduces Statcast's reported release point to within 0.1 in. Constant acceleration is itself an approximation: real drag and Magnus force change slightly over the flight.</li>
+      <li><b>Fixed hitter's eye.</b> 65 in high, 35.8 in off the plate's center and 28.3 in behind its back tip, as set in to_polar.py. Averages pool both batter sides; the RHH/LHH switch only moves the eye. Gaps are measured at the same time after release, so a slower pitch's lag shows up as angle, and that reads differently from each side of the plate. Lefties top the RHH leaderboard partly for this reason; switch to LHH to compare.</li>
+      <li><b>No names.</b> The data has MLBAM IDs only; the Savant link opens the pitcher's page. "Throws" is inferred from release side.</li>
+      <li><b>Sample.</b> Regular season 2025 from Mar 20 to Oct 1 (includes two Wild Card days, misses the Tokyo Series). Pitchers with 300+ pitches and pitch types with 25+ are shown.</li>
+    </ul>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = __DATA__;
+// columns: type, n, usage, x0, y0, z0, vx0, vy0, vz0, ax, ay, az, tf, speed, plate_x, plate_z, swings, whiffs, csw
+// x0..vz0 are the Statcast 9-parameter fit evaluated at the release point; tf is the time to the front of the plate.
+const NAMES={FF:"Four-seam",SI:"Sinker",FC:"Cutter",SL:"Slider",ST:"Sweeper",CU:"Curveball",KC:"Knuckle curve",CH:"Changeup",FS:"Splitter",SV:"Slurve",CS:"Slow curve",FO:"Forkball"};
+const COLORS={FF:"#d22d49",SI:"#fe9d00",FC:"#933f2c",SL:"#c3bd0e",ST:"#ddb33a",CU:"#00d1ed",KC:"#6236cd",CH:"#1dbe3a",FS:"#3bacac",SV:"#93afd4",CS:"#0068ff",FO:"#55ccab"};
+const IN=1/12, EYE_Z=65*IN, EYE_Y=-28.3*IN, EYE_X={R:-35.8*IN,L:35.8*IN};
+const state={pid:null,side:"R",dec:0.175,hidden:new Set(),view:"eye",span:"early"};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function traj(r){
+  const [,, ,x0,y0,z0,vx,vy,vz,ax,ay,az,tf]=r;
+  const at=t=>[x0+vx*t+0.5*ax*t*t, y0+vy*t+0.5*ay*t*t, z0+vz*t+0.5*az*t*t];
+  return {tf,at};
+}
+function primary(rows){
+  const fb=rows.filter(r=>["FF","SI","FC"].includes(r[0]));
+  return (fb.length?fb:rows).reduce((a,b)=>b[2]>a[2]?b:a);
+}
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const norm=a=>Math.hypot(a[0],a[1],a[2]);
+function angle(a,b){const d=(a[0]*b[0]+a[1]*b[1]+a[2]*b[2])/(norm(a)*norm(b));return Math.acos(Math.min(1,Math.max(-1,d)))*180/Math.PI}
+function eyeOf(side){return [EYE_X[side],EYE_Y,EYE_Z]}
+
+function metrics(rows,side,dec){
+  const P=primary(rows), pt=traj(P), td=Math.max(0.02,pt.tf-dec), eye=eyeOf(side);
+  const pfDec=pt.at(td);
+  return {P,td,list:rows.map(r=>{
+    const T=traj(r), pd=T.at(Math.min(td,T.tf));
+    const aDeg=angle(sub(pd,eye),sub(pfDec,eye));
+    const gapIn=norm(sub(pd,pfDec))*12;
+    const plateIn=Math.hypot(r[14]-P[14],r[15]-P[15])*12;
+    return {r,T,isRef:r===P,aDeg,gapIn,plateIn,ratio:aDeg>0.05?plateIn/aDeg:null,
+      whiff:r[16]>0?r[17]/r[16]:null,csw:r[18]};
+  })};
+}
+
+/* ---------- pitcher picker ---------- */
+const ids=Object.keys(DATA).map(Number).sort((a,b)=>tot(b)-tot(a));
+function tot(id){return DATA[id].reduce((s,r)=>s+r[1],0)}
+function throwsOf(id){const P=primary(DATA[id]);return P[3]<0?"RHP":"LHP"}
+const sel=document.getElementById("pitcher");
+sel.innerHTML=ids.map(id=>`<option value="${id}">${id} · ${throwsOf(id)} · ${tot(id).toLocaleString()} pitches</option>`).join("");
+sel.onchange=()=>load(+sel.value);
+document.getElementById("find").addEventListener("input",e=>{
+  const q=e.target.value.trim(); if(!q) return;
+  const hit=ids.find(id=>String(id).startsWith(q)); if(hit){sel.value=hit;load(hit)}
+});
+function seg(id,cb){const el=document.getElementById(id);el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));cb(b.dataset.v)})}
+seg("side",v=>{state.side=v;refresh(true)});
+seg("view",v=>{state.view=v;setView();
+  document.getElementById("hint").textContent=(v==="eye"||v==="catcher")?`Drag to look around from the ${v==="eye"?"hitter's eye":"catcher's spot"} · pinch or scroll to zoom · tap the view again to reset`:"Drag to orbit · pinch or scroll to zoom · red dot = hitter's eye · tap the view again to reset"});
+seg("span",v=>{state.span=v;refresh(false)});
+const dec=document.getElementById("dec");
+dec.addEventListener("input",()=>{state.dec=dec.value/1000;document.getElementById("decv").textContent=dec.value;refresh(true)});
+
+/* ---------- 3D ---------- */
+let renderer,scene,camera,controls,group,ballGroup,anim=null;
+const S=(p)=>new THREE.Vector3(p[0],p[2],-p[1]); // Statcast (x right, y to mound, z up) -> three
+function init3d(){
+  const host=document.getElementById("scene");
+  if(!window.THREE){document.getElementById("glerr").hidden=false;return}
+  try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){document.getElementById("glerr").hidden=false;return}
+  if(!renderer.getContext()){document.getElementById("glerr").hidden=false;return}
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  host.prepend(renderer.domElement);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,16/10,0.05,400);
+  if(THREE.OrbitControls){controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+    controls.dampingFactor=0.12;controls.rotateSpeed=0.35;controls.zoomSpeed=0.5;controls.panSpeed=0.4}
+  else{controls={target:new THREE.Vector3(),update(){camera.lookAt(this.target)}}}
+  scene.add(new THREE.AmbientLight(0xffffff,0.75));
+  const dl=new THREE.DirectionalLight(0xffffff,0.6);dl.position.set(10,30,10);scene.add(dl);
+  buildField();
+  group=new THREE.Group();scene.add(group);
+  ballGroup=new THREE.Group();scene.add(ballGroup);
+  new ResizeObserver(resize).observe(host);resize();
+  initLook(renderer.domElement);
+  (function loop(t){requestAnimationFrame(loop);if(look.on)applyLook();else controls.update();stepAnim(t);renderer.render(scene,camera)})();
+}
+let fieldObjs=[];
+function buildField(){
+  fieldObjs.forEach(o=>scene.remove(o));fieldObjs=[];
+  const add=o=>{scene.add(o);fieldObjs.push(o)};
+  const grass=new THREE.Mesh(new THREE.PlaneGeometry(40,80),new THREE.MeshLambertMaterial({color:css("--grass")}));
+  grass.rotation.x=-Math.PI/2;grass.position.set(0,-0.01,-28);add(grass);
+  const dirt=new THREE.Mesh(new THREE.CircleGeometry(9,48),new THREE.MeshLambertMaterial({color:css("--dirt")}));
+  dirt.rotation.x=-Math.PI/2;dirt.position.set(0,0,-60.5);add(dirt);
+  const box=new THREE.Mesh(new THREE.CircleGeometry(13,48),new THREE.MeshLambertMaterial({color:css("--dirt")}));
+  box.rotation.x=-Math.PI/2;box.position.set(0,0,0);add(box);
+  const chalk=new THREE.LineBasicMaterial({color:css("--chalk")});
+  const plate=[[0,0],[-8.5,8.5],[-8.5,17],[8.5,17],[8.5,8.5],[0,0]].map(([x,y])=>S([x*IN,y*IN,0.01]));
+  add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(plate),chalk));
+  const rub=new THREE.Mesh(new THREE.BoxGeometry(2,0.05,0.5),new THREE.MeshLambertMaterial({color:0xffffff}));rub.position.copy(S([0,60.5,0.8]));add(rub);
+  const zoneMat=new THREE.LineBasicMaterial({color:css("--muted")});
+  const zy=17*IN, zone=[[-0.83,1.5],[0.83,1.5],[0.83,3.5],[-0.83,3.5],[-0.83,1.5]].map(([x,z])=>S([x,zy,z]));
+  add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(zone),zoneMat));
+  const e=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),new THREE.MeshBasicMaterial({color:0xe03030}));
+  e.name="eye";e.visible=state.view!=="eye";add(e);
+}
+function resize(){if(!renderer)return;const h=document.getElementById("scene");renderer.setSize(h.clientWidth,h.clientHeight,false);camera.aspect=h.clientWidth/h.clientHeight;camera.updateProjectionMatrix()}
+function setView(){
+  if(!camera||!scene)return;
+  const eye=eyeOf(state.side), rows=DATA[state.pid]||[], P=rows.length?primary(rows):null;
+  const rel=P?[P[3],P[4],P[5]]:[0,54,6];
+  const v=state.view;
+  if(v==="eye"){
+    // just behind the eye, looking at release
+    const T=traj(P||[0,0,0,0,54,6,0,-134,-6,0,28,-30,0.42,92,0,2.5]), td=Math.max(0.02,T.tf-state.dec), aim=T.at(td);
+    const look=[(rel[0]+aim[0])/2,(rel[1]+aim[1])/2,(rel[2]+aim[2])/2];
+    camera.position.copy(S(eye));controls.target.copy(S(look));camera.fov=50;
+  }else if(v==="catcher"){camera.position.copy(S([0,-9,3.2]));controls.target.copy(S([0,30,3.5]));camera.fov=40}
+  else if(v==="side"){camera.position.copy(S([-48,28,4]));controls.target.copy(S([0,28,3.5]));camera.fov=45}
+  else {camera.position.copy(S([0,28,60]));controls.target.copy(S([0,28,0]));camera.fov=45}
+  const eo=scene.getObjectByName("eye");if(eo)eo.visible=v!=="eye";
+  camera.near=v==="eye"?0.3:0.05;
+  camera.updateProjectionMatrix();
+  // Hitter's eye and catcher are first-person: the camera stays put and dragging turns the head.
+  look.on=(v==="eye"||v==="catcher");
+  if(controls.enabled!==undefined)controls.enabled=!look.on;
+  if(look.on){const d=controls.target.clone().sub(camera.position).normalize();
+    look.pitch=Math.asin(d.y);look.yaw=Math.atan2(d.x,-d.z);look.fov=camera.fov;applyLook()}
+  else controls.update();
+}
+const look={on:false,yaw:0,pitch:0,fov:50};
+function applyLook(){
+  const cp=Math.cos(look.pitch);
+  const dir=new THREE.Vector3(cp*Math.sin(look.yaw),Math.sin(look.pitch),-cp*Math.cos(look.yaw));
+  camera.lookAt(camera.position.clone().add(dir));
+  if(camera.fov!==look.fov){camera.fov=look.fov;camera.updateProjectionMatrix()}
+}
+function initLook(el){
+  const pts=new Map();let pinch=null;
+  el.addEventListener("pointerdown",e=>{if(!look.on)return;el.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=null});
+  el.addEventListener("pointermove",e=>{
+    if(!look.on||!pts.has(e.pointerId))return;
+    const prev=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pts.size===1){
+      // drag the scene: one screen width of drag turns the head by about the field of view
+      const k=(look.fov*Math.PI/180)/Math.max(200,el.clientHeight)*0.9;
+      look.yaw-=(e.clientX-prev[0])*k;look.pitch+=(e.clientY-prev[1])*k;
+      look.pitch=Math.max(-1.3,Math.min(1.3,look.pitch));
+    }else if(pts.size===2){
+      const [a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);
+      if(pinch)look.fov=Math.max(12,Math.min(80,look.fov*pinch/d));pinch=d;
+    }
+  });
+  const up=e=>{pts.delete(e.pointerId);pinch=null};
+  el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
+  el.addEventListener("wheel",e=>{if(!look.on)return;e.preventDefault();look.fov=Math.max(12,Math.min(80,look.fov*(1+e.deltaY*0.001)))},{passive:false});
+}
+function draw3d(m){
+  if(!scene)return;
+  const eyeObj=scene.getObjectByName("eye");eyeObj.position.copy(S(eyeOf(state.side)));
+  group.clear();ballGroup.clear();
+  m.list.forEach(o=>{
+    if(state.hidden.has(o.r[0]))return;
+    const col=new THREE.Color(COLORS[o.r[0]]||"#888");
+    const pts=[];for(let i=0;i<=80;i++)pts.push(S(o.T.at(o.T.tf*i/80)));
+    const tube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),120,o.isRef?0.07:0.05,8,false),new THREE.MeshLambertMaterial({color:col}));
+    group.add(tube);
+    const td=Math.min(m.td,o.T.tf);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.28,0.04,8,32),new THREE.MeshBasicMaterial({color:col}));
+    ring.position.copy(S(o.T.at(td)));
+    const ahead=S(o.T.at(Math.min(o.T.tf,td+0.01)));ring.lookAt(ahead);group.add(ring);
+    const ball=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),new THREE.MeshLambertMaterial({color:0xffffff,emissive:col,emissiveIntensity:0.35}));
+    ball.userData.T=o.T;ball.position.copy(S(o.T.at(0)));ball.visible=false;ballGroup.add(ball);
+  });
+}
+function stepAnim(now){
+  if(!anim)return;
+  if(anim.start==null)anim.start=now;
+  const t=(now-anim.start)/1000*anim.speed;
+  let done=true;
+  ballGroup.children.forEach(b=>{const T=b.userData.T;b.visible=true;b.position.copy(S(T.at(Math.min(t,T.tf))));if(t<T.tf)done=false});
+  if(done&&t>1.2){anim=null;ballGroup.children.forEach(b=>b.visible=false)}
+}
+const flight=document.getElementById("flight"),maxBtn=document.getElementById("max");
+function setMax(on){
+  flight.classList.toggle("max",on);document.body.classList.toggle("locked",on);
+  maxBtn.textContent=on?"Exit full screen":"Full screen";maxBtn.setAttribute("aria-pressed",on);
+  if(on&&flight.requestFullscreen){flight.requestFullscreen().catch(()=>{})}
+  else if(!on&&document.fullscreenElement){document.exitFullscreen().catch(()=>{})}
+  requestAnimationFrame(resize);
+}
+maxBtn.onclick=()=>setMax(!flight.classList.contains("max"));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&flight.classList.contains("max"))setMax(false)});
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&flight.classList.contains("max"))setMax(false)});
+document.getElementById("play").onclick=()=>{
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  anim={start:null,speed:reduce?1:0.35};
+};
+
+/* ---------- hitter's-eye 2D ---------- */
+function eyeAngles(p,eye,basis){
+  const d=sub(p,eye);
+  const f=d[0]*basis.f[0]+d[1]*basis.f[1]+d[2]*basis.f[2];
+  const r=d[0]*basis.r[0]+d[1]*basis.r[1]+d[2]*basis.r[2];
+  const u=d[0]*basis.u[0]+d[1]*basis.u[1]+d[2]*basis.u[2];
+  return [Math.atan2(r,f)*180/Math.PI,Math.atan2(u,f)*180/Math.PI];
+}
+function basisFor(eye,rel){
+  const d=sub(rel,eye),n=norm(d),f=[d[0]/n,d[1]/n,d[2]/n];
+  let r=[f[1]*1-f[2]*0, f[2]*0-f[0]*1, 0]; // f x up
+  const rn=Math.hypot(r[0],r[1]);r=[r[0]/rn,r[1]/rn,0];
+  const u=[r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
+  return {f,r,u};
+}
+function fitCanvas(c){const dpr=Math.min(2,window.devicePixelRatio||1),w=c.clientWidth,h=c.clientHeight;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
+  const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return [g,w,h]}
+function drawEye(m){
+  const c=document.getElementById("eye"),[g,w,h]=fitCanvas(c);
+  g.clearRect(0,0,w,h);
+  const eye=eyeOf(state.side), P=m.P, B=basisFor(eye,[P[3],P[4],P[5]]);
+  const full=state.span==="full", tEnd=full?99:m.td+0.05;
+  const zy=17/12, // front edge of the plate, where Statcast reports plate location
+   zone=[[-0.83,1.5],[0.83,1.5],[0.83,3.5],[-0.83,3.5],[-0.83,1.5]].map(([x,z])=>eyeAngles([x,zy,z],eye,B));
+  const series=m.list.filter(o=>!state.hidden.has(o.r[0])).map(o=>{
+    const pts=[];const end=Math.min(tEnd,o.T.tf);for(let i=0;i<=60;i++){pts.push(eyeAngles(o.T.at(end*i/60),eye,B))}
+    return {o,pts,dec:eyeAngles(o.T.at(Math.min(m.td,o.T.tf)),eye,B)};
+  });
+  let ext=0.5;series.forEach(s=>s.pts.forEach(([a,b])=>{ext=Math.max(ext,Math.abs(a),Math.abs(b))}));
+  if(full)zone.forEach(([a,b])=>{ext=Math.max(ext,Math.abs(a),Math.abs(b))});
+  ext=Math.ceil(ext*1.1*2)/2;
+  const pad=34,sz=Math.min(w,h)-pad*1.4,ox=pad+(w-pad*1.4-sz)/2,oy=(h-pad*1.4-sz)/2+6;
+  const X=a=>ox+(a+ext)/(2*ext)*sz, Y=b=>oy+(ext-b)/(2*ext)*sz;
+  g.strokeStyle=css("--line");g.lineWidth=1;g.fillStyle=css("--muted");g.font="11px "+css("--mono");
+  const step=ext>40?20:ext>16?10:ext>8?4:ext>4?2:ext>2?1:0.5;
+  g.textAlign="center";
+  for(let v=-Math.floor(ext/step)*step;v<=ext+1e-9;v+=step){
+    g.beginPath();g.moveTo(X(v),oy);g.lineTo(X(v),oy+sz);g.stroke();g.fillText(v.toFixed(step<1?1:0)+"°",X(v),oy+sz+14);
+    g.beginPath();g.moveTo(ox,Y(v));g.lineTo(ox+sz,Y(v));g.stroke();
+  }
+  g.textAlign="right";for(let v=-Math.floor(ext/step)*step;v<=ext+1e-9;v+=step)g.fillText(v.toFixed(step<1?1:0)+"°",ox-4,Y(v)+4);
+  g.textAlign="left";g.fillText("← left · right →  (hitter's view)",ox,oy+sz+28);
+  series.forEach(s=>{
+    g.strokeStyle=COLORS[s.o.r[0]]||"#888";g.lineWidth=s.o.isRef?3:2;g.beginPath();
+    s.pts.forEach(([a,b],i)=>i?g.lineTo(X(a),Y(b)):g.moveTo(X(a),Y(b)));g.stroke();
+    g.beginPath();g.arc(X(s.dec[0]),Y(s.dec[1]),5,0,7);g.lineWidth=2;g.stroke();
+  });
+  if(full){g.setLineDash([4,4]);g.strokeStyle=css("--muted");g.lineWidth=1.5;g.beginPath();zone.forEach(([a,b],i)=>i?g.lineTo(X(a),Y(b)):g.moveTo(X(a),Y(b)));g.stroke();g.setLineDash([]);
+    g.fillStyle=css("--muted");g.textAlign="center";g.fillText("zone",X((zone[0][0]+zone[1][0])/2),Y(zone[0][1])+14);g.textAlign="left"}
+  g.fillStyle=css("--ink");g.beginPath();g.arc(X(0),Y(0),3,0,7);g.fill();
+  g.fillText("release",X(0)+6,Y(0)-6);
+}
+
+/* ---------- perceptual view: what the hitter sees at the decision ---------- */
+// Mirrors the optical-motion (P3) and fastball-prior-miss (P2) features in model/perceptual.py,
+// evaluated on the average pitch at the page's shared decision instant.
+const BALL_IN=2.9, PLATE_FRONT=17/12, H=0.005;
+const vel=(r,t)=>[r[6]+r[9]*t, r[7]+r[10]*t, r[8]+r[11]*t];
+const deg=x=>x*180/Math.PI;
+function angSpeed(p,v,eye){
+  const d=sub(p,eye),n=norm(d),u=[d[0]/n,d[1]/n,d[2]/n],k=v[0]*u[0]+v[1]*u[1]+v[2]*u[2];
+  return deg(norm([v[0]-k*u[0],v[1]-k*u[1],v[2]-k*u[2]])/n);
+}
+function ballDeg(p,eye){return 2*deg(Math.atan(BALL_IN/24/norm(sub(p,eye))))}
+function fastballRead(r,P,t){
+  // From the pitch's true state at t, bend it like the primary fastball to the front of the plate.
+  const p=traj(r).at(t), v=vel(r,t), a=[P[9],P[10],P[11]];
+  const qa=0.5*a[1], qb=v[1], qc=p[1]-PLATE_FRONT, s=(-qb-Math.sqrt(qb*qb-4*qa*qc))/(2*qa);
+  return {x:p[0]+v[0]*s+0.5*a[0]*s*s, z:p[2]+v[2]*s+0.5*a[2]*s*s, s};
+}
+function percep(m){
+  const eye=eyeOf(state.side), P=m.P, PT=traj(P), t=m.td, sgn=state.side==="R"?1:-1;
+  return m.list.map(o=>{
+    const tt=Math.min(t,o.T.tf), p=o.T.at(tt), v=vel(o.r,tt), sp=angSpeed(p,v,eye);
+    const fp=PT.at(Math.min(t,PT.tf)), fsp=angSpeed(fp,vel(P,Math.min(t,PT.tf)),eye);
+    const sep=u=>angle(sub(o.T.at(Math.min(u,o.T.tf)),eye),sub(PT.at(Math.min(u,PT.tf)),eye));
+    const rd=fastballRead(o.r,P,tt), widths=o.aDeg/((ballDeg(p,eye)+ballDeg(fp,eye))/2);
+    return {o,sp,vsFb:sp-fsp,sepRate:(sep(t+H)-sep(t-H))/(2*H),widths,
+      read:rd,missX:(o.r[14]-rd.x)*sgn*12,missZ:(o.r[15]-rd.z)*12,missT:((o.T.tf-tt)-rd.s)*1000};
+  });
+}
+const pv={off:0,gaze:"track",anim:null};
+seg("gaze",v=>{pv.gaze=v;refresh(false)});
+const offEl=document.getElementById("off");
+function setOff(ms){pv.off=ms;offEl.value=ms;
+  document.getElementById("offv").textContent=ms===0?"decision point":`${ms>0?"+":"−"}${Math.abs(ms)} ms`;
+  drawSnap(metrics(DATA[state.pid],state.side,state.dec))}
+offEl.addEventListener("input",()=>{pv.anim=null;setOff(+offEl.value)});
+document.getElementById("watch").onclick=()=>{
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){setOff(0);return}
+  const from=-150,to=100,dur=3000;let t0=null;pv.anim={};const me=pv.anim;
+  (function step(now){if(pv.anim!==me)return;if(t0==null)t0=now;
+    const k=Math.min(1,(now-t0)/dur);setOff(Math.round((from+(to-from)*k)/5)*5);
+    if(k<1)requestAnimationFrame(step);else{pv.anim=null;setTimeout(()=>{if(!pv.anim)setOff(0)},900)}})(performance.now());
+};
+function arrow(g,x0,y0,x1,y1){
+  const L=Math.hypot(x1-x0,y1-y0);if(L<2)return;
+  const a=Math.atan2(y1-y0,x1-x0),hd=Math.min(7,L*0.45);
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
+  g.beginPath();g.moveTo(x1,y1);g.lineTo(x1-hd*Math.cos(a-0.45),y1-hd*Math.sin(a-0.45));
+  g.lineTo(x1-hd*Math.cos(a+0.45),y1-hd*Math.sin(a+0.45));g.closePath();g.fill();
+}
+function drawSnap(m){
+  const c=document.getElementById("snap"),[g,w,h]=fitCanvas(c);g.clearRect(0,0,w,h);
+  const eye=eyeOf(state.side),P=m.P,PT=traj(P),B=basisFor(eye,[P[3],P[4],P[5]]);
+  const t=m.td+pv.off/1000, track=pv.gaze==="track";
+  const ang=(T,u)=>eyeAngles(T.at(Math.max(0,Math.min(u,T.tf))),eye,B);
+  const ctr=u=>track?ang(PT,u):ang(PT,m.td);
+  const vis=m.list.filter(o=>!state.hidden.has(o.r[0]));
+  // Scale is set at the decision point and held while scrubbing, so motion reads as motion.
+  // The window is framed on all pitches over the 100 ms up to the decision point, then held at that offset from the fastball.
+  const c0=ang(PT,m.td),lo=[0,0],hi=[0,0];
+  vis.forEach(o=>{for(let k=0;k<=4;k++){const u=m.td-0.1+0.025*k,a=ang(o.T,u),cu=track?ang(PT,u):c0;
+    for(const i of [0,1]){lo[i]=Math.min(lo[i],a[i]-cu[i]);hi[i]=Math.max(hi[i],a[i]-cu[i])}}});
+  const mid=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2];
+  let ext=Math.max(0.5,(hi[0]-lo[0])/2,(hi[1]-lo[1])/2)+ballDeg(PT.at(m.td),eye);
+  ext=Math.ceil(ext*1.25*4)/4;
+  const pad=30,sz=Math.min(w,h)-pad*1.3,ox=pad+(w-pad*1.3-sz)/2,oy=8;
+  const cc=ctr(t),fx=cc[0]+mid[0],fy=cc[1]+mid[1];
+  const X=a=>ox+(a-fx+ext)/(2*ext)*sz,Y=b=>oy+(ext-(b-fy))/(2*ext)*sz,R=d=>d/(2*ext)*sz;
+  g.save();g.beginPath();g.rect(ox,oy,sz,sz);g.clip();
+  g.strokeStyle=css("--line");g.lineWidth=1;
+  const step=ext>8?2:ext>4?1:ext>2?0.5:ext>1?0.25:0.1;
+  for(let v=Math.ceil((fx-ext)/step)*step;v<=fx+ext;v+=step){g.beginPath();g.moveTo(X(v),oy);g.lineTo(X(v),oy+sz);g.stroke()}
+  for(let v=Math.ceil((fy-ext)/step)*step;v<=fy+ext;v+=step){g.beginPath();g.moveTo(ox,Y(v));g.lineTo(ox+sz,Y(v));g.stroke()}
+  // crosshair at the frame center: the fastball (tracked) or its decision-point spot (fixed)
+  g.strokeStyle=css("--muted");g.setLineDash([3,4]);
+  g.beginPath();g.moveTo(X(cc[0]),oy);g.lineTo(X(cc[0]),oy+sz);g.moveTo(ox,Y(cc[1]));g.lineTo(ox+sz,Y(cc[1]));g.stroke();g.setLineDash([]);
+  const order=[...vis].sort((a,b)=>(a.isRef?1:0)-(b.isRef?1:0));
+  order.forEach(o=>{
+    const col=COLORS[o.r[0]]||"#888";
+    if(t>o.T.tf+0.002)return;
+    // trail: last 100 ms, in frame coordinates at each past instant
+    g.strokeStyle=col;g.lineCap="round";
+    for(let k=0;k<12;k++){const u0=t-0.1+k*0.1/12,u1=u0+0.1/12;if(u1<=0)continue;
+      const a0=ang(o.T,u0),a1=ang(o.T,u1),c0_=ctr(u0),c1_=ctr(u1),s0=sub([...a0,0],[...c0_,0]),s1=sub([...a1,0],[...c1_,0]);
+      g.globalAlpha=0.08+0.6*k/12;g.lineWidth=1+3*k/12;g.beginPath();
+      g.moveTo(X(cc[0]+s0[0]),Y(cc[1]+s0[1]));g.lineTo(X(cc[0]+s1[0]),Y(cc[1]+s1[1]));g.stroke()}
+    g.globalAlpha=1;
+    const a=ang(o.T,t),p=o.T.at(Math.min(t,o.T.tf)),r=Math.max(2.5,R(ballDeg(p,eye))/2);
+    const rel=u=>{const x=ang(o.T,u),y=ctr(u);return [x[0]-y[0],x[1]-y[1]]};
+    const r0=rel(t-H),r1=rel(t+H),dx=(r1[0]-r0[0])/(2*H)*0.05,dy=(r1[1]-r0[1])/(2*H)*0.05;
+    const bx=X(a[0]),by=Y(a[1]);
+    g.fillStyle=col;g.strokeStyle=col;g.lineWidth=2;arrow(g,bx,by,bx+R(dx),by-R(dy));
+    g.fillStyle="#f6f4ee";g.beginPath();g.arc(bx,by,r,0,7);g.fill();
+    g.lineWidth=o.isRef?3:2;g.strokeStyle=col;g.stroke();
+    g.fillStyle=css("--ink");g.font="600 11px "+css("--mono");g.textAlign="left";g.fillText(o.r[0],bx+r+4,by-r-2);
+  });
+  g.restore();
+  g.fillStyle=css("--muted");g.font="11px "+css("--mono");g.textAlign="center";
+  g.fillText(`${(2*ext).toFixed(1)}° across · grid ${step}°`,ox+sz/2,oy+sz+16);
+  const ms=Math.round((PT.tf-t)*1000);
+  document.getElementById("snaplbl").textContent=`Snapshot · ${(t*1000).toFixed(0)} ms after release · fastball ${ms>0?ms+" ms from the plate":"at the plate"}`;
+}
+function drawPlate(m,pc){
+  const c=document.getElementById("plate"),[g,w,h]=fitCanvas(c);g.clearRect(0,0,w,h);
+  const vis=pc.filter(d=>!state.hidden.has(d.o.r[0]));
+  let x0=-1.6,x1=1.6,z0=0.6,z1=4.2;
+  vis.forEach(d=>{[[d.o.r[14],d.o.r[15]],[d.read.x,d.read.z]].forEach(([x,z])=>{x0=Math.min(x0,x-0.3);x1=Math.max(x1,x+0.3);z0=Math.min(z0,z-0.3);z1=Math.max(z1,z+0.3)})});
+  const span=Math.max(x1-x0,z1-z0),cx=(x0+x1)/2,cz=(z0+z1)/2,pad=26,sz=Math.min(w,h)-pad*1.2,ox=(w-sz)/2,oy=6;
+  const X=x=>ox+(x-cx+span/2)/span*sz,Y=z=>oy+(cz+span/2-z)/span*sz,R=ft=>ft/span*sz;
+  g.strokeStyle=css("--line");g.lineWidth=1;g.fillStyle=css("--muted");g.font="11px "+css("--mono");
+  for(let z=Math.ceil(cz-span/2);z<=cz+span/2;z++){g.beginPath();g.moveTo(ox,Y(z));g.lineTo(ox+sz,Y(z));g.stroke();g.textAlign="left";g.fillText(z+" ft",ox+3,Y(z)-3)}
+  g.strokeStyle=css("--muted");g.lineWidth=1.5;g.strokeRect(X(-0.83),Y(3.5),R(1.66),R(2));
+  if(Y(0)<oy+sz){g.fillStyle=css("--chalk");g.strokeStyle=css("--muted");g.beginPath();g.moveTo(X(-0.708),Y(0));g.lineTo(X(0.708),Y(0));g.stroke()}
+  const bx=state.side==="R"?X(cx-span/2)+6:X(cx+span/2)-6;
+  g.fillStyle=css("--muted");g.textAlign=state.side==="R"?"left":"right";g.fillText(`${state.side}HH stands here`,bx,oy+sz-8);
+  vis.forEach(d=>{
+    const col=COLORS[d.o.r[0]]||"#888",ex=X(d.read.x),ez=Y(d.read.z),ax=X(d.o.r[14]),az=Y(d.o.r[15]),r=Math.max(3,R(BALL_IN/24));
+    g.strokeStyle=col;g.lineWidth=1.5;g.setLineDash([3,3]);g.beginPath();g.moveTo(ex,ez);g.lineTo(ax,az);g.stroke();g.setLineDash([]);
+    g.lineWidth=2;g.beginPath();g.arc(ex,ez,r,0,7);g.stroke();
+    g.fillStyle=col;g.beginPath();g.arc(ax,az,r,0,7);g.fill();
+    g.fillStyle=css("--ink");g.textAlign="left";g.font="600 11px "+css("--mono");g.fillText(d.o.r[0],ax+r+3,az+4);g.font="11px "+css("--mono");
+  });
+  g.fillStyle=css("--muted");g.textAlign="center";g.fillText("zone: 1.5–3.5 ft, plate width",ox+sz/2,oy+sz+16);
+}
+function drawPercepTable(pc){
+  const f=(v,d=1,sign=false)=>{if(v==null||!isFinite(v))return "–";const x=+v.toFixed(d)||0;return (sign&&x>0?"+":"")+x.toFixed(d)};
+  document.querySelector("#pctable tbody").innerHTML=pc.map(d=>{const r=d.o.isRef;return `<tr><td><span class="sw" style="background:${COLORS[d.o.r[0]]||'#888'}"></span> ${NAMES[d.o.r[0]]||d.o.r[0]}${r?'<span class="ref">REF</span>':''}</td>
+  <td>${f(d.sp)}</td><td>${r?"–":f(d.vsFb,1,true)}</td><td>${r?"–":f(d.sepRate,1,true)}</td><td>${r?"–":f(d.widths,1)}</td>
+  <td>${f(d.missX,1,true)}</td><td>${f(d.missZ,1,true)}</td><td>${f(d.missT,0,true)}</td></tr>`}).join("");
+}
+function drawReadout(m,pc){
+  const sec=pc.filter(d=>!d.o.isRef&&!state.hidden.has(d.o.r[0]));
+  const el=document.getElementById("readout");
+  if(!sec.length){el.textContent="";return}
+  const d=sec.reduce((a,b)=>b.o.r[2]>a.o.r[2]?b:a),nm=(NAMES[d.o.r[0]]||d.o.r[0]).toLowerCase(),fb=(NAMES[m.P[0]]||m.P[0]).toLowerCase();
+  const miss=Math.hypot(d.missX,d.missZ),w=d.widths;
+  el.innerHTML=`At the decision point, ${Math.round(state.dec*1000)} ms before the ${fb} reaches the plate, the ${nm} sits <b>${w<1?"less than one ball width":w.toFixed(1)+" ball widths"}</b> from the ${fb} and is pulling away at <b>${d.sepRate.toFixed(1)}°/s</b>. A hitter who reads it as the ${fb} from here is off by <b>${miss.toFixed(1)} in</b> at the plate${Math.abs(d.missT)>=5?` and <b>${Math.abs(d.missT).toFixed(0)} ms ${d.missT>0?"early":"late"}</b>`:""}.`;
+}
+function drawPercep(m){const pc=percep(m);drawSnap(m);drawPlate(m,pc);drawPercepTable(pc);drawReadout(m,pc)}
+
+/* ---------- tables ---------- */
+const pct=v=>v==null?"–":(v*100).toFixed(1);
+function drawTable(m){
+  const tb=document.querySelector("#ptable tbody");
+  tb.innerHTML=m.list.map(o=>`<tr><td><span class="sw" style="background:${COLORS[o.r[0]]||'#888'}"></span> ${NAMES[o.r[0]]||o.r[0]}${o.isRef?'<span class="ref">REF</span>':''}</td>
+  <td>${(o.r[2]*100).toFixed(1)}%</td><td>${o.r[1].toLocaleString()}</td><td>${o.r[13].toFixed(1)}</td><td>${o.T.tf.toFixed(3)}</td>
+  <td>${o.isRef?"–":o.aDeg.toFixed(2)}</td><td>${o.isRef?"–":o.gapIn.toFixed(1)}</td><td>${o.isRef?"–":o.plateIn.toFixed(1)}</td><td>${o.isRef||o.ratio==null?"–":o.ratio.toFixed(1)}</td>
+  <td>${pct(o.whiff)}</td><td>${pct(o.csw)}</td></tr>`).join("");
+  document.getElementById("pinfo").textContent=`${state.pid} · ${throwsOf(state.pid)} vs ${state.side}HH`;
+  const a=document.getElementById("savant");a.href=`https://baseballsavant.mlb.com/savant-player/${state.pid}`;
+}
+function drawChips(){
+  const rows=DATA[state.pid];
+  const el=document.getElementById("chips");
+  el.innerHTML=rows.map(r=>`<button type="button" class="chip" data-t="${r[0]}" aria-pressed="${!state.hidden.has(r[0])}"><span class="sw" style="background:${COLORS[r[0]]||'#888'}"></span>${r[0]} ${(r[2]*100).toFixed(0)}%</button>`).join("");
+}
+document.getElementById("chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;const t=b.dataset.t;
+  state.hidden.has(t)?state.hidden.delete(t):state.hidden.add(t);drawChips();refresh(false)});
+
+/* ---------- league ---------- */
+let league=[];
+function computeLeague(){
+  league=[];
+  ids.forEach(id=>{const m=metrics(DATA[id],state.side,state.dec);
+    m.list.forEach(o=>{if(!o.isRef)league.push({id,ref:m.P[0],o})})});
+}
+let scatterPts=[];
+function drawScatter(){
+  const c=document.getElementById("scatter"),[g,w,h]=fitCanvas(c);g.clearRect(0,0,w,h);
+  const L={l:48,r:12,t:12,b:40},W=w-L.l-L.r,H=h-L.t-L.b;
+  const xmax=Math.max(3,Math.ceil(quant(league.map(d=>d.o.aDeg),0.99))), ymax=Math.max(24,Math.ceil(quant(league.map(d=>d.o.plateIn),0.99)/6)*6);
+  const X=v=>L.l+Math.min(v,xmax)/xmax*W, Y=v=>L.t+H-Math.min(v,ymax)/ymax*H;
+  g.strokeStyle=css("--line");g.fillStyle=css("--muted");g.font="11px "+css("--mono");g.lineWidth=1;
+  g.textAlign="center";for(let v=0;v<=xmax;v+=xmax>6?2:1){g.beginPath();g.moveTo(X(v),L.t);g.lineTo(X(v),L.t+H);g.stroke();g.fillText(v+"°",X(v),L.t+H+14)}
+  g.textAlign="right";for(let v=0;v<=ymax;v+=6){g.beginPath();g.moveTo(L.l,Y(v));g.lineTo(L.l+W,Y(v));g.stroke();g.fillText(v+'"',L.l-6,Y(v)+4)}
+  g.textAlign="center";g.fillText("gap at decision point (degrees, from the hitter's eye)",L.l+W/2,h-6);
+  g.save();g.translate(12,L.t+H/2);g.rotate(-Math.PI/2);g.fillText("gap at plate (inches)",0,0);g.restore();
+  scatterPts=[];
+  g.globalAlpha=0.55;
+  league.forEach(d=>{if(d.id===state.pid)return;const x=X(d.o.aDeg),y=Y(d.o.plateIn);g.fillStyle=COLORS[d.o.r[0]]||"#888";g.beginPath();g.arc(x,y,2.6,0,7);g.fill();scatterPts.push([x,y,d.id])});
+  g.globalAlpha=1;g.strokeStyle=css("--ink");g.lineWidth=2;
+  league.forEach(d=>{if(d.id!==state.pid)return;const x=X(d.o.aDeg),y=Y(d.o.plateIn);g.fillStyle=COLORS[d.o.r[0]]||"#888";g.beginPath();g.arc(x,y,6,0,7);g.fill();g.stroke()});
+  const types=[...new Set(league.map(d=>d.o.r[0]))].filter(t=>league.filter(d=>d.o.r[0]===t).length>=10);
+  document.getElementById("legend").innerHTML=types.map(t=>`<span class="chip" style="cursor:default"><span class="sw" style="background:${COLORS[t]||'#888'}"></span>${NAMES[t]||t}</span>`).join("")+`<span class="chip" style="cursor:default"><span class="sw" style="background:transparent;border:2px solid ${css("--ink")}"></span>selected pitcher</span>`;
+}
+function quant(a,q){const s=[...a].sort((x,y)=>x-y);return s[Math.floor((s.length-1)*q)]||0}
+document.getElementById("scatter").addEventListener("click",e=>{
+  const r=e.target.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  let best=null,bd=144;scatterPts.forEach(p=>{const d=(p[0]-x)**2+(p[1]-y)**2;if(d<bd){bd=d;best=p}});
+  if(best){sel.value=best[2];load(best[2])}
+});
+function drawLeaderboard(){
+  const rows=league.filter(d=>d.o.plateIn>=12&&d.o.r[1]>=100).sort((a,b)=>a.o.aDeg-b.o.aDeg).slice(0,15);
+  document.querySelector("#lb tbody").innerHTML=rows.map(d=>`<tr class="click" data-id="${d.id}" tabindex="0"><td>${d.id} · ${throwsOf(d.id)}</td><td>${d.ref}→<span class="sw" style="background:${COLORS[d.o.r[0]]||'#888'};width:9px;height:9px"></span> ${d.o.r[0]}</td><td>${d.o.aDeg.toFixed(2)}</td><td>${d.o.plateIn.toFixed(1)}</td><td>${pct(d.o.whiff)}</td></tr>`).join("");
+}
+document.querySelector("#lb tbody").addEventListener("click",e=>{const tr=e.target.closest("tr");if(tr){sel.value=tr.dataset.id;load(+tr.dataset.id)}});
+document.querySelector("#lb tbody").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr");if(tr){sel.value=tr.dataset.id;load(+tr.dataset.id)}}});
+
+/* ---------- orchestration ---------- */
+function refresh(all){
+  const m=metrics(DATA[state.pid],state.side,state.dec);
+  draw3d(m);drawEye(m);drawTable(m);drawPercep(m);
+  if(all){computeLeague();drawLeaderboard()}
+  drawScatter();
+  if(all)setView();
+}
+function load(id){state.pid=id;state.hidden.clear();drawChips();refresh(false);drawScatter();setView();
+  try{localStorage.setItem("pte-pid",id)}catch(e){}}
+init3d();
+let start=ids[0];try{const s=+localStorage.getItem("pte-pid");if(DATA[s])start=s}catch(e){}
+sel.value=start;state.pid=start;computeLeague();drawLeaderboard();load(start);
+new ResizeObserver(()=>{const m=metrics(DATA[state.pid],state.side,state.dec);drawEye(m);drawPercep(m);drawScatter()}).observe(document.querySelector(".wrap"));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(scene)buildField();refresh(false)});
+new MutationObserver(()=>{if(scene)buildField();refresh(false)}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+</script>
