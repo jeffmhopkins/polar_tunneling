@@ -4,7 +4,7 @@
 
 Pitch tunneling measured from the hitter's eye: does a pitch that looks like another one early, then splits late, do better than its stuff and location say it should?
 
-[![Python 3](https://img.shields.io/badge/Python-3-blue)](model/requirements.txt) [![Data: Statcast](https://img.shields.io/badge/data-Statcast%202025%20%7C%202026-blue)](https://baseballsavant.mlb.com/statcast_search) [![Model: LightGBM](https://img.shields.io/badge/model-LightGBM-blue)](https://lightgbm.readthedocs.io) [![Tests: pre-registered](https://img.shields.io/badge/tests-pre--registered-blue)](model/README.md)
+[![Python 3](https://img.shields.io/badge/Python-3-blue)](model/requirements.txt) [![Data: Statcast](https://img.shields.io/badge/data-Statcast%202025%20%7C%202026-blue)](https://baseballsavant.mlb.com/statcast_search) [![Model: LightGBM](https://img.shields.io/badge/model-LightGBM-blue)](https://lightgbm.readthedocs.io) [![Tests: pre-registered](https://img.shields.io/badge/tests-pre--registered-blue)](model/README.md) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
 
@@ -18,6 +18,32 @@ on 2026, and every test is written down and committed before its outcome is comp
 > [ginsy-codes/polar_tunneling](https://github.com/ginsy-codes/polar_tunneling). This repository carries
 > that history and builds the models, tests and report pages on top of it. The original outline is in
 > [docs/original_outline.md](docs/original_outline.md).
+
+## For humans
+
+> [!TIP]
+> **Start with [What it found](#what-it-found)**, the one-table summary. Every row links to the report
+> behind it, and [model/README.md](model/README.md) walks through each study in the order it was run.
+
+- To see the results rather than read them, build a [report page](#report-pages): the Pitch Sequencer
+  is the one to open first.
+- To rerun a study, see [Running it](#running-it). The data is already in the repository.
+- The project started from [the original outline](docs/original_outline.md), which is still the best
+  explanation of why the hitter's-eye view matters.
+
+## For agents
+
+> [!IMPORTANT]
+> **Read [CLAUDE.md](CLAUDE.md) first.** It is the jump start for a new session: what the project is,
+> the layout, how to run the scripts and build the pages, and where the work was left.
+
+The rules that matter most:
+
+- Train on 2025 and test on 2026 **once**. A new variant gets a new test, never a rerun of an old one.
+- Commit a `model/PREREG_<name>.md` before computing any outcome, and never edit it after the run.
+- Report every result, failures included, in `model/<name>_report.md`, `model/README.md` and the table
+  below.
+- Run scripts from the repository root.
 
 ## What it found
 
@@ -90,3 +116,8 @@ folder copied next to it.
 Pitch data is from [Baseball Savant](https://baseballsavant.mlb.com) (MLB Advanced Media), pulled with
 [pybaseball](https://github.com/jldbc/pybaseball). Stuff+, Pitching+ and PitchingBot grades are from
 [FanGraphs](https://www.fangraphs.com). Both are subject to their owners' terms.
+
+## License
+
+[MIT](LICENSE). The pitch data in `datamining/outputs/` is not covered by it: it stays under Baseball
+Savant's and FanGraphs' terms.
