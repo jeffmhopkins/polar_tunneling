@@ -239,3 +239,26 @@ pitchers. Effects are per +25 pts of adherence:
 
 So the tool's value over an at-bat comes through strikeouts. It has no
 contact-quality signal, which is what a contact term in the model would add.
+
+## Contact quality: run-value sequencer (pre-registered, `PREREG_damage.md`)
+
+`damage_sequencer.py` writes `damage_report.md`. It ranks pitches by
+expected run value instead of CSW. Six models (swing, whiff | swing,
+foul | contact, called strike | take, CSW, xwOBA | ball in play) feed 2025
+run values per count and outcome, and a fit of run value on xwOBA for balls
+in play. Trained on 2025 with the batter-specific features, tested once on
+2026:
+
+- The run-value pick differs from the CSW pick on 45.9% of pitches.
+- **Primary: passes.** Where they differ, the run-value pick allowed
+  **-0.27 runs per 100 pitches** (95% CI -0.48 to -0.08), measured with
+  xwOBA on contact. With actual run values: -0.38 (CI -0.67 to -0.09).
+- It gives up 5.2 CSW points but allows 0.026 less xwOBA on balls in play
+  (CI -0.038 to -0.014).
+- The perceptual and hitter features add little to predicting xwOBA on
+  contact (2026 R^2 0.032 vs 0.030), so most of the gain comes from weighing
+  outcomes by their run value, not from predicting contact quality better.
+
+`damage_sequencer.py --production` writes the page data (`sequencing.json`,
+`batter_adj/`) with runs saved per 100 next to CSW, plus team tags for the
+pre-game plan.
