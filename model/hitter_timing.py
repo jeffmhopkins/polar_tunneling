@@ -179,7 +179,7 @@ def main():
         ok = g(base["B"]) >= 0.3 and g(base["B"]) > max(ng)
         passes.append(ok)
         worse.append(g(base["B"]) < -0.3)
-        rows.append({"outcome": "whiff | swing" if y == "whiff" else "swing", "2026 log-loss A": round(base["A"][y], 5),
+        rows.append({"outcome": "whiff per swing" if y == "whiff" else "swing", "2026 log-loss A": round(base["A"][y], 5),
                      "B fitted gain x1000": round(g(base["B"]), 2), "C league tau* gain x1000": round(g(base["C"]), 2),
                      "null gains": ", ".join(f"{x:.2f}" for x in ng), "pass": ok})
     part1 = any(passes) and not any(worse)
