@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polar Tunneling Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) with wider breakouts for the scorecard, diagram and tables. Scoreboard-style condensed headings over a plain sans body. */
+:root {
+  --bg: #f4f6f5;
+  --panel: #ffffff;
+  --ink: #17221f;
+  --ink-2: #44524e;
+  --muted: #6d7b77;
+  --line: #d6ddda;
+  --accent: #0e6b57;
+  --accent-soft: #e1efea;
+  --other: #8d9a96;
+  --pass: #1d7a3e;
+  --pass-bg: #e3f2e7;
+  --fail: #b23a2e;
+  --fail-bg: #f8e5e2;
+  --mixed: #94660a;
+  --mixed-bg: #f6edd9;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111816; --panel: #18211e; --ink: #e5ece9; --ink-2: #b6c3bf; --muted: #8c9a96; --line: #2c3834;
+    --accent: #4fc2a3; --accent-soft: #1b322b; --other: #6f7d79;
+    --pass: #6ccf8b; --pass-bg: #183223; --fail: #f08a7c; --fail-bg: #3a1f1b; --mixed: #e2b357; --mixed-bg: #352a14;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111816; --panel: #18211e; --ink: #e5ece9; --ink-2: #b6c3bf; --muted: #8c9a96; --line: #2c3834;
+  --accent: #4fc2a3; --accent-soft: #1b322b; --other: #6f7d79;
+  --pass: #6ccf8b; --pass-bg: #183223; --fail: #f08a7c; --fail-bg: #3a1f1b; --mixed: #e2b357; --mixed-bg: #352a14;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.6 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+.wrap { max-width: 960px; margin: 0 auto; display: grid; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(2.6rem, 7vw, 4rem); font-weight: 700; }
+h2 { font-size: 2rem; font-weight: 700; }
+h3 { font-size: 1.35rem; font-weight: 600; }
+p { margin: 0; }
+section { display: grid; gap: 18px; min-width: 0; }
+.eyebrow { font: 500 0.75rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
+.lede { font-size: 1.15rem; color: var(--ink-2); }
+.stack { display: grid; gap: 14px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .num { font-family: var(--mono); font-size: 0.9em; }
+.num { font-variant-numeric: tabular-nums; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+
+.bottomline { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); padding: 20px 22px; display: grid; gap: 12px; max-width: 68ch; }
+.bottomline strong { color: var(--ink); }
+
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 0.72rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.88rem; }
+tr.ours td:first-child { font-weight: 600; }
+.pill { display: inline-block; font: 600 0.7rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 8px; border-radius: 3px; white-space: nowrap; }
+.pill.pass { color: var(--pass); background: var(--pass-bg); }
+.pill.fail { color: var(--fail); background: var(--fail-bg); }
+.pill.mixed { color: var(--mixed); background: var(--mixed-bg); }
+.small { font-size: 0.85rem; color: var(--muted); }
+
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 2px; background: var(--line); border: 1px solid var(--line); }
+.step { background: var(--panel); padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.step .n { font: 500 0.75rem/1 var(--mono); color: var(--accent); }
+.step h3 { font-size: 1.15rem; }
+.step p { font-size: 0.88rem; color: var(--ink-2); }
+
+.feat { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 28px; }
+.feat div { display: grid; gap: 2px; min-width: 0; }
+.feat b { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+.feat span { font-size: 0.9rem; color: var(--ink-2); }
+
+.chart { background: var(--panel); border: 1px solid var(--line); padding: 18px 18px 10px; display: grid; gap: 10px; position: relative; }
+.chart svg { width: 100%; min-width: 560px; height: auto; display: block; overflow: visible; }
+.svg-scroll { overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.82rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font: 0.8rem/1.4 var(--mono); padding: 6px 9px; border-radius: 3px; white-space: nowrap; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 16px; display: grid; gap: 6px; align-content: start; text-decoration: none; color: var(--ink); }
+.card:hover { border-color: var(--accent); }
+.card b { font-family: var(--display); font-size: 1.2rem; font-weight: 600; color: var(--accent); }
+.card span { font-size: 0.88rem; color: var(--ink-2); }
+.verdict-row { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+footer { border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+<style>
+.eq { font-family: var(--mono); font-size: 0.88rem; background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; overflow-x: auto; white-space: pre; line-height: 1.7; color: var(--ink); }
+.spec { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; border: 1px solid var(--line); background: var(--panel); }
+.spec dt, .spec dd { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--line); min-width: 0; }
+.spec dt { font: 500 0.78rem/1.5 var(--mono); color: var(--muted); background: var(--bg); }
+.spec dd { font-size: 0.92rem; }
+.spec dt:last-of-type, .spec dd:last-of-type { border-bottom: 0; }
+@media (max-width: 560px) { .spec { grid-template-columns: 1fr; } .spec dt { border-bottom: 0; padding-bottom: 2px; } }
+h2 .n { color: var(--accent); margin-right: 10px; }
+td code { font-size: 0.82rem; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header class="stack">
+  <div class="eyebrow">jeffmhopkins/polar_tunneling · methods and results · Oct 2026</div>
+  <h1>Polar Tunneling: methods and results</h1>
+  <p class="lede prose">A batter's-eye pitch model built from public Statcast data, a pitch sequencer built on it, and the pre-registered tests run on both. Every model and run value was fit on the 2025 regular season and scored once on 2026. Numbers are taken from the reports in <code>model/</code>.</p>
+</header>
+
+<div class="bottomline">
+  <div class="eyebrow">Summary</div>
+  <p>1. A per-pitcher Tunnel+ fails in both forms, geometric and perceptual. The pitcher-level values are stable but don't predict out-of-half results.</p>
+  <p>2. The commit-point features improve 2026 pitch-level log-loss over a full set of controls (whiff|swing +1.83, swing +5.86 per 1000). The gain survives speed controls.</p>
+  <p>3. As a pitch picker, the model beats FanGraphs Stuff+, Pitching+ and PitchingBot on CSW, and beats Pitching+ and PitchingBot on runs (about even with Stuff+).</p>
+  <p>4. It ties the same model without the perceptual features on pick quality (type, runs, type+zone). The features improve forecasts but rarely change the argmax.</p>
+</div>
+
+<!-- ============================ 1 ============================ -->
+<section>
+  <h2><span class="n">1</span>What we built</h2>
+
+  <h3>Data</h3>
+  <dl class="spec">
+    <dt>Source</dt><dd>Baseball Savant Statcast via <code>pybaseball</code>, regular season only (<code>game_type == "R"</code>). Excludes PO, EP, FA, CS, SC, UN and fits with flight time over 0.6 s.</dd>
+    <dt>Train / test</dt><dd>2025: 705,020 pitches. 2026: 710,809 pitches (rows with a spin rate and a complete 9-parameter fit).</dd>
+    <dt>Extra columns</dt><dd><code>bat_speed</code>, <code>swing_length</code>, <code>arm_angle</code>, <code>n_priorpa_thisgame_player_at_bat</code>, <code>delta_run_exp</code>, <code>estimated_woba_using_speedangle</code>.</dd>
+    <dt>Public grades</dt><dd>FanGraphs 2025 per-pitch Stuff+, Pitching+ and PitchingBot (<code>datamining/pull_fangraphs_grades.py</code>).</dd>
+  </dl>
+
+  <h3>Geometry</h3>
+  <p class="prose">Constant-acceleration flight from the 9-parameter fit. The public CSV lacks x/z at y = 50 ft, so release state is recovered from <code>plate_x</code>/<code>plate_z</code> (the fit evaluated at the front of the plate, y = 17/12 ft). Time is absolute, measured back from arrival.</p>
+<div class="eq">p(t) = p₀ + v₀·t + ½·a·t²        v(t) = v₀ + a·t        t_f : p_y(t_f) = 17/12 ft
+eye  e = (∓35.8, −28.3, 65) in      (− for RHH, + for LHH; Statcast catcher's-view axes)
+commit time   t_c = t_f − τ_b
+angle         θ(p₁, p₂) = arccos[ (p₁−e)·(p₂−e) / (|p₁−e| |p₂−e|) ]
+angular speed ω = |v − (v·û)û| / |p − e|,   û = (p − e)/|p − e|        (deg/s)</div>
+
+  <h3>Hitter timing (P1)</h3>
+<div class="eq">r_b  = mean(swing_length / bat_speed) over b's swings with bat_speed > 40 mph
+r̃_b  = (n_b·r_b + 50·r̄) / (n_b + 50)                  shrink to league mean r̄, prior 50 swings
+τ_b  = clip(175 ms · r̃_b / r̄, 125, 225)               missing → 175 ms</div>
+
+  <h3>Perceptual features, all at t_c</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Block</th><th>Feature</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td>P1 timing</td><td><code>tau_b</code></td><td>As above; also sets t_c for every other block.</td></tr>
+        <tr><td rowspan="3">P2 fastball-prior miss</td><td><code>miss_x_in</code>, <code>miss_z_in</code></td><td>Propagate p(t_c), v(t_c) to the plate with the pitcher's primary-fastball mean acceleration a_fb; actual minus extrapolated plate location, in inches (x signed by batter side).</td></tr>
+        <tr><td><code>miss_t_ms</code></td><td>τ_b − s, where s is the extrapolated time to the plate.</td></tr>
+        <tr><td colspan="2" class="small">Primary fastball = most-used of FF/SI/FC per pitcher × batter side; its mean state is the reference path.</td></tr>
+        <tr><td rowspan="3">P3 optical motion</td><td><code>ang_speed</code></td><td>ω at t_c.</td></tr>
+        <tr><td><code>ang_speed_vs_fb</code></td><td>ω − ω_fb, the fastball mean path at the same elapsed time min(t_c, t_f,fb).</td></tr>
+        <tr><td><code>sep_rate_vs_fb</code></td><td>[θ(t_c+h) − θ(t_c−h)] / 2h, separation from the fastball mean path, h = 5 ms.</td></tr>
+        <tr><td rowspan="2">P4 ambiguity</td><td><code>post_fb_commit</code>, <code>post_true_commit</code></td><td>Per pitcher × side, a 2D Gaussian over (azimuth, elevation) from the eye at t_f − 175 ms for each type with ≥ 20 pitches: N(μ_k, Σ_k + (0.1°)²I), prior = season usage. Features are the posterior P(fastball | x) and P(true type | x).</td></tr>
+        <tr><td><code>post_fb_release</code>, <code>post_true_release</code></td><td>Same observer on the release point.</td></tr>
+        <tr><td rowspan="2">P5 expectation</td><td><code>surprise_count</code></td><td>−log₂ p(type | pitcher, side, count), with p = (n_type + 5·usage) / (n_cell + 5).</td></tr>
+        <tr><td><code>surprise_prev</code></td><td>Same, conditioned on the previous pitch type.</td></tr>
+        <tr><td>P6 at-bat build-up</td><td><code>fb_seen_pa</code>, <code>sep_last_fb</code>, <code>n_priorpa_thisgame</code>, <code>pitch_number</code></td><td>Fastballs already seen in the PA; θ at t_c to the last fastball in the PA; times through the order; pitch number.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Reference clouds, usage and fastball paths are computed per season from trajectories and labels only, no outcomes. The first geometric version (<code>features.py</code>) used a fixed τ = 175 ms and the pair separations θ at commit (<code>d_dec_deg</code>), physical separation at the 100 ms tracking limit (<code>d_track_in</code>) and at the plate (<code>d_plate_in</code>) against the previous pitch.</p>
+
+  <h3>Outcome models</h3>
+  <dl class="spec">
+    <dt>Learner</dt><dd>LightGBM, binary objective (regression for xwOBA | BIP): learning rate 0.05, 63 leaves, min_child_samples 200, feature_fraction 0.8, bagging 0.8 every round, 400 rounds, seed 7. Fixed across every test, no tuning on 2026. Categoricals native.</dd>
+    <dt>Targets</dt><dd>swing; whiff | swing; called strike | take; CSW per pitch; foul | contact; xwOBA | ball in play.</dd>
+    <dt>M0 controls</dt><dd>pitch type, stand, p_throws, velo, horizontal and vertical movement, spin, extension, release height and side, plate location (batter-oriented x, z normalised to the zone), balls, strikes, platoon; previous pitch type, result and location; fastball differentials (Δvelo, Δmovement x/z, Δrelease x/z); arm angle; batter whiff|swing and swing rates (leave-one-game-out, prior 100).</dd>
+    <dt>Speed controls</dt><dd>Added from the speed check on: plate speed, flight time, Δvelo and Δflight time vs the previous pitch, Δflight time vs the fastball.</dd>
+    <dt>Standard model (B)</dt><dd>M0 + speed controls. No P features.</dd>
+    <dt>Perceptual model (A)</dt><dd>Standard + P1–P6.</dd>
+    <dt>Stuff-only (C)</dt><dd>Pitch type, stand, p_throws, velo, movement, spin, extension, release, arm angle, fastball differentials. No location, count or context. A Stuff+-style baseline.</dd>
+    <dt>Hitter layer</dt><dd>Batter's 2025 whiff, swing and chase rates against fastball / breaking / offspeed classes (9 features), for hitters with ≥ 200 pitches seen.</dd>
+  </dl>
+
+  <h3>Sequencer</h3>
+  <p class="prose">For pitcher j, side, count c and previous pitch type q, each type k in his menu (usage ≥ 4%, ≥ 40 pitches to that side) is scored by placing up to 20 of his real pitches of type k into the context and averaging the model's predictions. Context: previous pitch = his mean pitch of type q, previous result = the most common one leading into c, average hitter, first time through.</p>
+<div class="eq">CSW_score(k | j, side, c, q) = (1/N) Σᵢ f_CSW(x_i^k ; context)          top pick = argmax_k
+
+E[RV] = P(take)·[P(cs)·RV(c,cs) + (1−P(cs))·RV(c,ball)]
+      + P(swing)·[P(whiff)·RV(c,whiff) + (1−P(whiff))·( P(foul)·RV(c,foul) + (1−P(foul))·RV_bip(c, E[xwOBA]) )]
+
+RV(c, outcome)   = mean 2025 delta_run_exp by count and outcome
+RV_bip(c, xwOBA) = 2025 linear fit of delta_run_exp on count dummies + xwOBA, balls in play
+runs pick = argmin_k E[RV]</div>
+  <p class="small">Out-of-sample grids (<code>sequencing.py --train-years 2025</code>) take the model, previous-result lookup and batter medians from 2025. 2026 is used only for pitch shapes, locations and usage, never outcomes. The production pages retrain on 2025 + 2026.</p>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section>
+  <h2><span class="n">2</span>What we tested</h2>
+
+  <h3>Protocol</h3>
+  <ul class="prose">
+    <li>Each test has a <code>model/PREREG_*.md</code> committed before any outcome for it was computed. It fixes the features, controls, endpoints and pass bar. The 2026 test is run once, and all results are reported.</li>
+    <li><strong>Forecast endpoint:</strong> ΔLL = 1000 · (LL<sub>M0</sub> − LL<sub>M1</sub>) on 2026, mean binary log-loss.</li>
+    <li><strong>Null:</strong> M1 refit with all P columns permuted within pitcher × pitch type in both train and test, 5 draws. This keeps each pitcher × type's feature distribution, so a pass means the signal is in pitch-to-pitch variation, not identity. Pass bar: ΔLL ≥ 1.0 and above all 5 nulls on whiff | swing or swing.</li>
+    <li><strong>Picker endpoint:</strong> within-count matched-minus-unmatched gap on 2026, where "matched" means the thrown type equals the 2025-model pick:</li>
+  </ul>
+<div class="eq">G = Σ_c n_c·( ȳ_c,matched − ȳ_c,unmatched ) / Σ_c n_c          y = CSW (pts) or realised RV (runs/100)
+picker A vs B: G_A − G_B on the same pitches
+95% CI: pitcher-cluster bootstrap (resample pitchers with replacement; 2000 draws for validation, 1000 later, 500 for regressions)</div>
+  <ul class="prose">
+    <li><strong>Selection controls:</strong> within-OLS, CSW<sub>i</sub> = β·matched<sub>i</sub> + γ′X<sub>i</sub> + α<sub>pitcher×side×count</sub>, with X = batter 2025 CSW-against (overall and vs the pitch's class), outs, runners, inning band, platoon, previous pitch class and result. Plus an IPW gap from a propensity model for throwing the top pick.</li>
+    <li><strong>At-bat:</strong> adherence = PA match share − the pitcher's usual match rate in those counts. y<sub>PA</sub> = β·adh + γ′X + α<sub>pitcher×side</sub>, reported as β × 0.25 (per +25 pts adherence).</li>
+    <li><strong>Realised RV of a test pitch:</strong> non-contact outcomes from the 2025 RV(c, outcome) table; balls in play from RV<sub>bip</sub> at the pitch's actual xwOBA, so contact is valued by quality of contact, not where it landed.</li>
+    <li><strong>Picker sample:</strong> 2026 pitches from 265 pitchers with ≥ 1,000 pitches, about 470k.</li>
+  </ul>
+
+  <h3>Results</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Test (prereg)</th><th>Endpoint and bar</th><th class="r">2026 result</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Geometric pairs (<code>feasibility.py</code>, 2025 CV)</td><td>ΔLL of d_dec, d_track, d_plate over stuff + location + count + prev pitch</td><td class="r">−0.6 to +0.5</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>Arsenal vs fastball, 2025 → 2026</td><td>Group-level angle gap vs residual whiff</td><td class="r">ΔLL +0.1; ρ −0.07 (plate gap −0.11)</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>Perceptual, primary (<code>PREREG.md</code>)</td><td>ΔLL ≥ 1.0 and &gt; 5 nulls</td><td class="r">whiff|sw +1.83 (nulls ≤ 0.08)<br>swing +5.86 (nulls ≤ −0.07)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>Perceptual, secondary</td><td>Pitcher × type mean P value predicts other-half M0 residual whiff|sw, r ≥ 0.10</td><td class="r">split-half 0.94; r = −0.019</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>Speed check (<code>PREREG_speed.md</code>)</td><td>Same bar, speed controls in M0</td><td class="r">+2.14 / +5.67 (117% / 97% kept)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>Per-hitter τ (<code>PREREG_hitter.md</code> 1)</td><td>Fitted τ_b beats bat-tracking τ_b on 2026</td><td class="r">−0.64 / −0.87; reliability r = 0.04</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>Top pick vs not (<code>PREREG_validation.md</code>)</td><td>G &gt; 0, CI &gt; 0</td><td class="r">+4.48 CSW (+3.99, +4.98)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>vs naive pick</td><td>G − G_naive (best 2025 CSW type in count)</td><td class="r">+1.84 (+1.24, +2.39)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>After-what</td><td>Same pitcher × type × side × count, favoured vs less-favoured previous pitch</td><td class="r">+2.57 (+2.04, +3.11); model said +1.39</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>Pitcher choice (<code>PREREG_choice.md</code>)</td><td>β after controls</td><td class="r">+3.56 (+3.13, +4.00); IPW +4.16</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>Whole at-bat (<code>PREREG_atbat.md</code>)</td><td>K%, xwOBA/PA, contact xwOBA per +25 pts adherence</td><td class="r">K +1.15 (+0.94, +1.34)<br>xwOBA/PA −0.0043<br>contact xwOBA +0.0003 (−0.0021, +0.0026)</td><td><span class="pill mixed">2 of 3</span></td></tr>
+        <tr><td>Hitter-specific (<code>PREREG_hitter.md</code> 2)</td><td>Where picks differ (17.6%), hitter pick − average pick</td><td class="r">+2.90 CSW (+2.06, +3.77)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>Runs pick (<code>PREREG_damage.md</code>)</td><td>Where RV and CSW picks differ (45.9%), RV pick − CSW pick</td><td class="r">−0.27 runs/100 (−0.48, −0.08)</td><td><span class="pill pass">Pass</span></td></tr>
+        <tr><td>A vs B, CSW (<code>PREREG_game.md</code>)</td><td>G_A − G_B</td><td class="r">+0.16 (−0.06, +0.38)</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>A vs B, runs (<code>PREREG_runs.md</code>)</td><td>G_RA − G_RB</td><td class="r">−0.03 (−0.12, +0.06)</td><td><span class="pill fail">Fail</span></td></tr>
+        <tr><td>A vs B, type + zone (<code>PREREG_location.md</code>)</td><td>Pick over (type, Statcast zone 1–9, 11–14), 15% sample</td><td class="r">−0.07 (−0.71, +0.50)</td><td><span class="pill fail">Fail</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">ΔLL in units of 10⁻³ nats per pitch. CSW in percentage points. Runs per 100 pitches, negative favours the pitcher.</p>
+
+  <h3>Ablations and decomposition (2026, ΔLL each block alone over M0)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Block</th><th class="r">whiff | swing</th><th class="r">swing</th><th class="r">whiff | swing, speed M0</th><th class="r">swing, speed M0</th></tr></thead>
+      <tbody>
+        <tr><td>P1 timing</td><td class="r">−0.01</td><td class="r">0.37</td><td class="r">0.30</td><td class="r">0.05</td></tr>
+        <tr><td>P2 fastball-prior miss</td><td class="r">0.36</td><td class="r">1.14</td><td class="r">0.86</td><td class="r">1.13</td></tr>
+        <tr><td>P3 optical motion</td><td class="r">0.90</td><td class="r">4.40</td><td class="r">1.61</td><td class="r">4.02</td></tr>
+        <tr><td>P4 ambiguity</td><td class="r">0.60</td><td class="r">0.43</td><td class="r">0.52</td><td class="r">0.35</td></tr>
+        <tr><td>P5 expectation</td><td class="r">0.36</td><td class="r">0.61</td><td class="r">0.93</td><td class="r">−0.30</td></tr>
+        <tr><td>P6 at-bat build-up</td><td class="r">0.95</td><td class="r">1.53</td><td class="r">0.75</td><td class="r">0.82</td></tr>
+        <tr><td>All P</td><td class="r">1.83</td><td class="r">5.86</td><td class="r">2.14</td><td class="r">5.67</td></tr>
+        <tr><td>Raw kinematics at t_c (6 numbers), expl.</td><td class="r">–</td><td class="r">–</td><td class="r">2.45</td><td class="r">6.07</td></tr>
+        <tr><td>All P over speed M0 + kinematics, expl.</td><td class="r">–</td><td class="r">–</td><td class="r">0.89</td><td class="r">2.01</td></tr>
+        <tr><td>P3 over speed M0 + kinematics, expl.</td><td class="r">–</td><td class="r">–</td><td class="r">−0.01</td><td class="r">0.72</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small prose">Reading: most of the gain is the ball's state (position and velocity) at the commit point, which plate-based controls miss. Re-expressing it as eye-frame angular motion adds little over raw kinematics. P2, P4, P5 and P6 add about 0.9 / 2.0 beyond it. The decomposition rows were not pre-registered.</p>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section>
+  <h2><span class="n">3</span>How it compared</h2>
+  <p class="prose">Pickers built from 2025 only, scored on the same 470,321 2026 pitches (FanGraphs pickers on the 425,045 where the pitcher has at least two graded types). RA, RB and RC pick by min E[RV] with the perceptual, standard and stuff-only feature sets. A picks by max CSW. D = best 2025 CSW type for the count. E = the pitcher's most-used 2026 type in that count (usage only, no outcomes). FS / FP / FB = highest 2025 FanGraphs grade in his menu. FanGraphs grades are season grades per pitch, not count-aware, so this tests "throw the best-graded pitch", not what those models were built to do.</p>
+
+  <div class="chart" id="runsChart">
+    <h3>Runs allowed when the pick was thrown vs not (G, runs per 100)</h3>
+    <p class="small">Within count, 2026. Further left is better. Bars are 95% pitcher-bootstrap intervals.</p>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Our models</span><span><i style="background:var(--other)"></i>Public grades and simple rules</span></div>
+    <div class="svg-scroll"><svg id="runsSvg" viewBox="0 0 720 360" role="img" aria-label="Dot plot of runs per 100 pitches for nine pitch pickers"></svg></div>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Picker</th><th class="r">Share thrown</th><th class="r">G runs/100 (95% CI)</th><th class="r">G CSW pts</th></tr></thead>
+      <tbody>
+        <tr class="ours"><td>RA perceptual, by runs</td><td class="r">32.0%</td><td class="r">−0.60 (−0.72, −0.49)</td><td class="r">+1.15</td></tr>
+        <tr class="ours"><td>RB standard, by runs</td><td class="r">28.9%</td><td class="r">−0.58 (−0.68, −0.47)</td><td class="r">+1.25</td></tr>
+        <tr class="ours"><td>RC stuff-only, by runs</td><td class="r">28.7%</td><td class="r">−0.47 (−0.60, −0.35)</td><td class="r">+1.19</td></tr>
+        <tr class="ours"><td>A perceptual, by CSW</td><td class="r">28.7%</td><td class="r">−0.52 (−0.63, −0.40)</td><td class="r">+4.19</td></tr>
+        <tr><td>D best pitch for the count</td><td class="r">31.7%</td><td class="r">−0.37 (−0.49, −0.24)</td><td class="r">+2.67</td></tr>
+        <tr><td>E pitcher's habit</td><td class="r">44.7%</td><td class="r">−0.53 (−0.62, −0.42)</td><td class="r">+0.52</td></tr>
+        <tr><td>FS FanGraphs Stuff+</td><td class="r">26.6%</td><td class="r">−0.39 (−0.52, −0.24)</td><td class="r">+2.84</td></tr>
+        <tr><td>FP FanGraphs Pitching+</td><td class="r">27.6%</td><td class="r">−0.36 (−0.50, −0.23)</td><td class="r">+1.22</td></tr>
+        <tr><td>FB PitchingBot</td><td class="r">28.5%</td><td class="r">−0.29 (−0.43, −0.15)</td><td class="r">+1.21</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Paired difference (same pitches)</th><th class="r">Agree</th><th class="r">Δ (95% CI)</th></tr></thead>
+      <tbody>
+        <tr><td>A − FS, CSW</td><td class="r">37%</td><td class="r">+1.32 (+0.67, +2.02)</td></tr>
+        <tr><td>A − FP, CSW</td><td class="r">31%</td><td class="r">+2.94 (+2.11, +3.77)</td></tr>
+        <tr><td>A − FB, CSW</td><td class="r">33%</td><td class="r">+2.95 (+2.12, +3.78)</td></tr>
+        <tr><td>RA − FS, runs/100</td><td class="r">29%</td><td class="r">−0.19 (−0.35, +0.00)</td></tr>
+        <tr><td>RA − FP, runs/100</td><td class="r">31%</td><td class="r">−0.21 (−0.38, −0.04)</td></tr>
+        <tr><td>RA − FB, runs/100</td><td class="r">32%</td><td class="r">−0.29 (−0.43, −0.12)</td></tr>
+        <tr><td>RA − RC (stuff-only), runs/100</td><td class="r">36%</td><td class="r">−0.13 (−0.29, +0.01)</td></tr>
+        <tr><td>RA − D, runs/100</td><td class="r">31%</td><td class="r">−0.21 (−0.36, −0.07)</td></tr>
+        <tr><td>RA − E (habit), runs/100</td><td class="r">40%</td><td class="r">−0.08 (−0.23, +0.07)</td></tr>
+        <tr class="ours"><td>A − B, CSW (primary)</td><td class="r">82%</td><td class="r">+0.16 (−0.06, +0.38)</td></tr>
+        <tr class="ours"><td>RA − RB, runs/100 (primary)</td><td class="r">78%</td><td class="r">−0.03 (−0.12, +0.06)</td></tr>
+        <tr class="ours"><td>LA − LB, type + zone, runs/100 (primary)</td><td class="r">60%</td><td class="r">−0.07 (−0.71, +0.50)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Forecast, 2026 log-loss (710,486 pitches)</th><th class="r">Swing</th><th class="r">Whiff per pitch</th><th class="r">CSW</th></tr></thead>
+      <tbody>
+        <tr class="ours"><td>A perceptual</td><td class="r">0.4448</td><td class="r">0.3138</td><td class="r">0.4727</td></tr>
+        <tr><td>B standard</td><td class="r">0.4505</td><td class="r">0.3155</td><td class="r">0.4748</td></tr>
+        <tr><td>C stuff-only</td><td class="r">0.6869</td><td class="r">0.3557</td><td class="r">0.5913</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small prose">A is the best forecaster on every target, but A and B pick the same type 82% of the time. Most of the margin over the public grades comes from conditioning on count and on each pitch's realised shape and location, which a season grade per pitch type doesn't use.</p>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section>
+  <h2><span class="n">4</span>Limits</h2>
+  <ul class="prose">
+    <li><strong>Picker tests are observational.</strong> Matched vs unmatched pitches differ in ways the controls can't fully capture (scouting, catcher, game plan). The after-what gap came in larger than the model predicted (+2.57 vs +1.39), which points to residual selection. Read +3.56 as an upper bound.</li>
+    <li><strong>Type, not intent.</strong> Statcast records the landing spot, not the target. The zone test mixes choice with command.</li>
+    <li><strong>One holdout season.</strong> Everything is 2025 → 2026 with one fixed hyperparameter set.</li>
+    <li><strong>Contact quality is weakly modelled.</strong> 2026 R² for xwOBA | BIP is 0.032 (0.030 without P and hitter features). The runs pick gains mainly by weighting outcomes by run value.</li>
+    <li><strong>Eye position is generic</strong> (65 in high, fixed offset). τ_b comes from bat tracking; the per-hitter fitted τ didn't replicate (r = 0.04).</li>
+    <li><strong>Grid assumptions:</strong> average hitter, first time through, modal previous result. Pitchers with fewer than 1,000 pitches are excluded from season tests.</li>
+  </ul>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section>
+  <h2><span class="n">5</span>Code and outputs</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>File</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>polar_transformations/reconstruct_trajectory.py</code>, <code>to_polar.py</code></td><td>9-parameter fit → release state, flight time; batter-eye polar frame</td></tr>
+        <tr><td><code>model/features.py</code>, <code>feasibility.py</code>, <code>robustness.py</code></td><td>Geometric pair features and the first go/no-go</td></tr>
+        <tr><td><code>model/arsenal.py</code>, <code>arsenal_holdout.py</code></td><td>Arsenal vs fastball, within 2026 and 2025 → 2026</td></tr>
+        <tr><td><code>model/perceptual.py</code>, <code>speed_check.py</code>, <code>hitter_timing.py</code></td><td>P1–P6 build, primary test, speed check, per-hitter τ</td></tr>
+        <tr><td><code>model/sequencing.py</code>, <code>validate_sequencer.py</code>, <code>validate_choice.py</code>, <code>validate_atbat.py</code></td><td>Grid and picker validation</td></tr>
+        <tr><td><code>model/hitter_sequencer.py</code>, <code>damage_sequencer.py</code></td><td>Hitter layer and E[RV] picker</td></tr>
+        <tr><td><code>model/game_report.py</code>, <code>runs_compare.py</code>, <code>location_compare.py</code></td><td>Picker comparisons incl. FanGraphs grades</td></tr>
+        <tr><td><code>model/*_report.md</code>, <code>model/PREREG_*.md</code></td><td>Every result and its pre-registration</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cards">
+    <a class="card" href="https://jeffmhopkins.github.io/polar_tunneling/explorer/" target="_blank" rel="noopener"><b>Pitch Tunnel Explorer</b><span>Arsenal paths in 3D and from the eye, commit point marked.</span></a>
+    <a class="card" href="https://jeffmhopkins.github.io/polar_tunneling/sequencer/" target="_blank" rel="noopener"><b>Pitch Sequencer</b><span>The production grid: CSW and runs saved per option, hitter adjustments.</span></a>
+    <a class="card" href="https://jeffmhopkins.github.io/polar_tunneling/game-report/" target="_blank" rel="noopener"><b>Game report</b><span>BAL 10 @ NYY 2, 2026-09-25, every picker pitch by pitch.</span></a>
+    <a class="card" href="https://jeffmhopkins.github.io/polar_tunneling/pregame/rogers.html" target="_blank" rel="noopener"><b>Pre-game plan</b><span>Starter vs a specific lineup, from the sequencer.</span></a>
+  </div>
+</section>
+
+<footer class="small prose">
+  Repo: <a href="https://github.com/jeffmhopkins/polar_tunneling" target="_blank" rel="noopener">github.com/jeffmhopkins/polar_tunneling</a>. Full findings log in <code>model/README.md</code>.
+</footer>
+
+</div>
+<script>
+(function () {
+  var data = [
+    { k: "Perceptual model, by runs", v: -0.60, lo: -0.72, hi: -0.49, ours: true },
+    { k: "Standard model, by runs", v: -0.58, lo: -0.68, hi: -0.47, ours: true },
+    { k: "Pitcher's habit", v: -0.53, lo: -0.62, hi: -0.42, ours: false },
+    { k: "Perceptual model, by CSW", v: -0.52, lo: -0.63, hi: -0.40, ours: true },
+    { k: "Stuff-only model, by runs", v: -0.47, lo: -0.60, hi: -0.35, ours: true },
+    { k: "FanGraphs Stuff+", v: -0.39, lo: -0.52, hi: -0.24, ours: false },
+    { k: "Best pitch for the count", v: -0.37, lo: -0.49, hi: -0.24, ours: false },
+    { k: "FanGraphs Pitching+", v: -0.36, lo: -0.50, hi: -0.23, ours: false },
+    { k: "PitchingBot", v: -0.29, lo: -0.43, hi: -0.15, ours: false }
+  ];
+  var svg = document.getElementById("runsSvg");
+  var NS = "http://www.w3.org/2000/svg";
+  var W = 720, left = 200, right = 20, top = 10, rowH = 36;
+  var min = -0.8, max = 0;
+  var x = function (v) { return left + (v - min) / (max - min) * (W - left - right); };
+  var H = top + data.length * rowH + 34;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  function el(n, a, txt) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; }
+  [-0.8, -0.6, -0.4, -0.2, 0].forEach(function (t) {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: top + data.length * rowH, stroke: "var(--line)", "stroke-width": t === 0 ? 1.5 : 1 });
+    el("text", { x: x(t), y: top + data.length * rowH + 20, "text-anchor": "middle", fill: "var(--muted)", "font-size": 12, "font-family": "var(--mono)" }, t.toFixed(1));
+  });
+  var tip = document.getElementById("tip"), box = document.getElementById("runsChart");
+  data.forEach(function (d, i) {
+    var cy = top + i * rowH + rowH / 2, c = d.ours ? "var(--accent)" : "var(--other)";
+    el("text", { x: left - 12, y: cy + 4, "text-anchor": "end", fill: d.ours ? "var(--ink)" : "var(--ink-2)", "font-size": 13, "font-weight": d.ours ? 600 : 400, "font-family": "var(--body)" }, d.k);
+    el("line", { x1: x(d.lo), x2: x(d.hi), y1: cy, y2: cy, stroke: c, "stroke-width": 2, "stroke-linecap": "round" });
+    el("circle", { cx: x(d.v), cy: cy, r: 6, fill: c, stroke: "var(--panel)", "stroke-width": 2 });
+    var hit = el("rect", { x: 0, y: cy - rowH / 2, width: W, height: rowH, fill: "transparent" });
+    hit.addEventListener("mousemove", function (ev) {
+      tip.textContent = d.k + ": " + d.v.toFixed(2) + " (" + d.lo.toFixed(2) + " to " + d.hi.toFixed(2) + ")";
+      tip.hidden = false;
+      var r = box.getBoundingClientRect();
+      var px = Math.min(ev.clientX - r.left + 12, r.width - tip.offsetWidth - 8);
+      tip.style.left = Math.max(8, px) + "px"; tip.style.top = (ev.clientY - r.top - 34) + "px";
+    });
+    hit.addEventListener("mouseleave", function () { tip.hidden = true; });
+  });
+})();
+</script>
+
+</body>
+</html>
