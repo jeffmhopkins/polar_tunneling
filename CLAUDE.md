@@ -58,6 +58,11 @@ count, batter side, previous pitch and hitter. [README.md](README.md) has the fi
 | Pre-game plan | `python model/pregame_report.py --game <game_pk> --pitcher <pitcher_id>`, then `python report_generation/build_pregame.py <game_pk> <pitcher_id> OUT.html` |
 | Pitch Tunnel Explorer | the four steps in [report_generation/explorer/README.md](report_generation/explorer/README.md) |
 
+The published copies are on the `gh-pages` branch, served at
+https://jeffmhopkins.github.io/polar_tunneling/ (`index.html` there lists them). To update one, rebuild it,
+copy it over the file on that branch (artifact-style pages need a `<!doctype html>` head added), and
+refresh the screenshot in `docs/img/` on `main` if it changed.
+
 ## Where things were left
 
 The open ideas, none started: pitch design suggestions (how a change in a pitch's movement or release
