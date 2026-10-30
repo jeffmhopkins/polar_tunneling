@@ -184,8 +184,8 @@ angle to the fastball's path and $`h = 0.005`$ s,
 ```
 
 **P4. Ambiguity, a Bayesian observer** (`posteriors`). The ball's direction from the eye is
-$`(\alpha, \epsilon)`$ = (azimuth $`\operatorname{atan2}(d_x, d_y)`$, elevation
-$`\operatorname{atan2}(d_z, \sqrt{d_x^2 + d_y^2})`$) in degrees. For each pitcher x side with at least two
+$`(\alpha, \epsilon)`$ = (azimuth $`\mathrm{atan2}(d_x, d_y)`$, elevation
+$`\mathrm{atan2}(d_z, \sqrt{d_x^2 + d_y^2})`$) in degrees. For each pitcher x side with at least two
 types of >= 20 pitches, each type $`k`$ gets a 2D Gaussian over the season: mean $`\boldsymbol\mu_k`$,
 covariance $`\Sigma_k + 0.1^2 I`$ (a 0.1 deg perceptual floor per axis) and prior $`\pi_k`$ = its usage
 share. For a pitch seen at $`\mathbf x = (\alpha, \epsilon)`$,
