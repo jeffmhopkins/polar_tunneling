@@ -105,6 +105,19 @@ tr:last-child td { border-bottom: 0; }
     <div class="callout" id="runs-callout"></div>
   </section>
 
+  <section id="loc-sec">
+    <h2>Choosing the location too</h2>
+    <p class="lede" id="loc-lede"></p>
+    <div class="two">
+      <div class="tbl"><table id="loc-tbl"></table></div>
+      <figure style="margin:0;display:grid;gap:6px;justify-items:center">
+        <div id="zone-map"></div>
+        <figcaption class="note">Statcast zones, catcher's view. 1-9 are inside the strike zone, 11-14 are the four chase areas around it.</figcaption>
+      </figure>
+    </div>
+    <div class="callout" id="loc-callout"></div>
+  </section>
+
   <section>
     <h2>This game, picker by picker</h2>
     <p class="lede" id="game-lede"></p>
@@ -223,6 +236,33 @@ if (!R) { $("runs-sec").hidden = true; } else {
     ${R["RA-FS"] ? `<p>The public models (FanGraphs' 2025 Stuff+, Pitching+ and PitchingBot grades) pick his best-graded pitch in every count. Our runs pick against them: Stuff+ ${f(R["RA-FS"])}, Pitching+ ${f(R["RA-FP"])}, PitchingBot ${f(R["RA-FB"])}. On strikes, our CSW pick against them: Stuff+ ${fc(R["A-FS"])}, Pitching+ ${fc(R["A-FP"])}, PitchingBot ${fc(R["A-FB"])}.</p>` : ""}`;
 }
 
+// ---- location ----
+const LOC = DATA.location && DATA.location.season;
+if (!LOC) { $("loc-sec").hidden = true; } else {
+  const LL = DATA.location.labels, LM = ["LA", "LB", "LZ"], LCOL = { LA: "a", LB: "b", LZ: "d" };
+  const sg = v => `${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
+  $("loc-lede").textContent = `These pickers choose a pitch type and a zone for it, in each pitch's real situation: the count and the actual previous pitch, including where it went. Tested on a ${LOC.n.toLocaleString()}-pitch sample of 2026. A pitch counts as following the pick only when both the type and the zone match. Runs are per 100 pitches, thrown the pick minus not, within count; lower is better.`;
+  let rows = `<tr><th>Picker</th><th class="n">Followed</th><th class="n">Runs per 100 (95% CI)</th><th class="n">CSW pts</th></tr>`;
+  LM.forEach(m => { const v = LOC[m]; rows += `<tr><td><span class="key"><span class="sw" style="background:var(--${LCOL[m]})"></span>${m}. ${esc(LL[m])}</span></td><td class="n">${pct(v.share, 1)}</td><td class="n">${sg(v.runs)} (${v.ci[0].toFixed(2)} to ${v.ci[1].toFixed(2)})</td><td class="n">${sg(v.csw)}</td></tr>`; });
+  $("loc-tbl").innerHTML = rows;
+  const ab = LOC["LA-LB"], az = LOC["LA-LZ"];
+  const fr = v => `${sg(v.diff)} runs per 100 (95% CI ${v.ci[0].toFixed(2)} to ${v.ci[1].toFixed(2)})`;
+  const fcs = v => `${sg(v.csw)} CSW pts (95% CI ${v.csw_ci[0].toFixed(2)} to ${v.csw_ci[1].toFixed(2)})`;
+  $("loc-callout").innerHTML = `<h3>${LOC.primary_pass ? "With location, the perceptual features help" : "With location, the perceptual features still tie"}</h3>
+    <p>The pre-registered test: perceptual (LA) against standard (LB), both picking type and zone. LA minus LB: ${fr(ab)}, and ${fcs(ab)}. They pick the same type ${pct(ab.same_type)} of the time, the same zone ${pct(ab.same_zone)}, and both ${pct(ab.agree)}.</p>
+    <p>Against a league location chart that knows nothing about this pitcher or the previous pitch (LZ): ${fr(az)}, and ${fcs(az)}. Location results are partly command: a pitch that ends up in the picked zone may have been aimed somewhere else.</p>`;
+  // zone map
+  const c = 34, o = 22, W = c * 3 + o * 2;
+  let z = `<svg viewBox="0 0 ${W} ${W}" width="${W * 1.6}" height="${W * 1.6}" role="img" aria-label="Zone numbers">`;
+  z += `<rect x="0" y="0" width="${W}" height="${W}" fill="var(--paper)" stroke="var(--rule)"/>`;
+  [[11, 0, 0], [12, W / 2, 0], [13, 0, W / 2], [14, W / 2, W / 2]].forEach(([n, x, y]) => {
+    z += `<rect x="${x}" y="${y}" width="${W / 2}" height="${W / 2}" fill="none" stroke="var(--rule)"/><text class="tick" x="${x + (x ? W / 2 - 9 : 9)}" y="${y + (y ? W / 2 - 6 : 14)}" text-anchor="middle">${n}</text>`;
+  });
+  for (let i = 0; i < 9; i++) { const x = o + (i % 3) * c, y = o + Math.floor(i / 3) * c;
+    z += `<rect x="${x}" y="${y}" width="${c}" height="${c}" fill="var(--card)" stroke="var(--ink)"/><text x="${x + c / 2}" y="${y + c / 2 + 4}" text-anchor="middle" style="fill:var(--ink);font:12px var(--mono)">${i + 1}</text>`; }
+  $("zone-map").innerHTML = z + `</svg>`;
+}
+
 // ---- game summary ----
 $("game-lede").textContent = `On the ${DATA.n_scored} pitches with a pitch menu, the pitchers' actual CSW rate was ${pct(DATA.csw_actual, 1)}. The perceptual model expected ${DATA.a_csw_actual.toFixed(1)}% from the pitches they chose.`;
 let gr = `<tr><th>Picker</th><th class="n">Agreed with pitcher</th><th class="n">CSW when agreed</th><th class="n">CSW otherwise</th><th class="n">Expected CSW if followed (model A)</th></tr>`;
@@ -236,7 +276,8 @@ $("game-note").textContent = `The last column scores every picker with model A's
 
 // ---- legend and filters ----
 $("legend").innerHTML = M.map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.labels[m])}</span>`).join("")
-  + (DATA.runs ? ["RA", "RB", "RC", "FS", "FP", "FB"].filter(m => DATA.runs.labels[m]).map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.runs.labels[m])}</span>`).join("") : "");
+  + (DATA.runs ? ["RA", "RB", "RC", "FS", "FP", "FB"].filter(m => DATA.runs.labels[m]).map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.runs.labels[m])}</span>`).join("") : "")
+  + (DATA.location ? ["LA", "LB", "LZ"].map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.location.labels[m])} (type·zone)</span>`).join("") : "");
 const pitchersInGame = [...new Set(DATA.pitches.map(p => p.pitcher))];
 let current = "all";
 function filters() {
@@ -292,8 +333,10 @@ function render() {
         const extra = p.ev != null ? ` · ${p.ev} mph EV${p.xwoba != null ? `, xwOBA ${p.xwoba.toFixed(3)}` : ""}` : "";
         const rp = DATA.runs && DATA.runs.pitches[`${p.ab}-${p.n}`];
         const rpicks = rp ? " " + ["RA", "RB", "RC", "FS", "FP", "FB"].filter(m => rp.picks[m]).map(m => `<span class="chip${rp.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.runs.labels[m])}">${m} ${rp.picks[m]}</span>`).join(" ") : "";
-        const picks = p.picks ? M.map(m => `<span class="chip${p.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.labels[m])}">${m} ${p.picks[m] || "–"}</span>`).join(" ") + rpicks : `<span class="note">–</span>`;
-        html += `<tr><td class="n">${p.n}</td><td class="mono">${p.count}</td><td><span class="thrown">${p.type}</span> <span class="note">${p.mph ?? ""}</span></td><td><span class="outc ${out}">${esc(result(p))}</span><span class="note">${extra}</span></td><td>${picks}</td><td>${bars(p)}${rp ? runsChips(rp, p) : ""}</td></tr>`;
+        const lp = DATA.location && DATA.location.pitches[`${p.ab}-${p.n}`];
+        const lpicks = lp ? `<div class="cands" style="margin-top:4px">` + ["LA", "LB", "LZ"].filter(m => lp.picks[m]).map(m => { const [t, zz] = lp.picks[m]; return `<span class="chip${t === p.type && zz === p.zone ? " hit" : ""}" title="${esc(DATA.location.labels[m])}">${m} ${t}·${zz}</span>`; }).join("") + `</div>` : "";
+        const picks = p.picks ? M.map(m => `<span class="chip${p.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.labels[m])}">${m} ${p.picks[m] || "–"}</span>`).join(" ") + rpicks + lpicks : `<span class="note">–</span>`;
+        html += `<tr><td class="n">${p.n}</td><td class="mono">${p.count}</td><td><span class="thrown">${p.type}</span> <span class="note">${p.mph ?? ""}${p.zone != null ? ` · zone ${p.zone}` : ""}</span></td><td><span class="outc ${out}">${esc(result(p))}</span><span class="note">${extra}</span></td><td>${picks}</td><td>${bars(p)}${rp ? runsChips(rp, p) : ""}</td></tr>`;
       });
       html += `</table></div></details>`;
     }
