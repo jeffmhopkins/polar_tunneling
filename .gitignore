@@ -1,1 +1,4 @@
 __pycache__/
+
+# intermediate chunks from datamining/pull_2025_chunked.py
+_chunk_*.csv

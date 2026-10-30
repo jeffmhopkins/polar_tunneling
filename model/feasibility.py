@@ -1,5 +1,5 @@
 """
-Go/no-go checks for the sequence tunnel score (proposal section 6), on 2025.
+Go/no-go checks for the sequence tunnel score, on 2025.
 
 1. Noise floor / free variation: how big the commit-point separation is for
    back-to-back pitches of the same type vs different types, and how much of it
