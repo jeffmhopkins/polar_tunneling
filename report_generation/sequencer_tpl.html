@@ -1,0 +1,234 @@
+<title>Pitch Sequencer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: scoreboard header, a control strip (pitcher, batter side, count board, previous pitch), then the ranked next-pitch card beside the after-what matrix, then notes. Same visual family as the Pitch Tunnel Explorer. */
+:root{
+  --bg:#eef1ee; --panel:#f8faf7; --ink:#15211b; --muted:#56645c; --line:#cfd8d1; --accent:#1f5aa6;
+  --good:#1d7a45; --bad:#b0412e; --cell:#e4ebe4;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1512; --panel:#151e1a; --ink:#e3ece6; --muted:#93a39a; --line:#2a3832; --accent:#7fb0f0;
+  --good:#5cc489; --bad:#e58a76; --cell:#1b2722; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1512; --panel:#151e1a; --ink:#e3ece6; --muted:#93a39a; --line:#2a3832; --accent:#7fb0f0;
+  --good:#5cc489; --bad:#e58a76; --cell:#1b2722; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,46px);line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.sub{color:var(--muted);max-width:70ch;margin:6px 0 0}
+h2{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.03em;margin:0;text-wrap:balance}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.strip{display:grid;grid-template-columns:minmax(0,1.3fr) auto auto minmax(0,1.4fr);gap:16px 22px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+@media (max-width:980px){.strip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:560px){.strip{grid-template-columns:minmax(0,1fr)}}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+input[type=search],select{font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0;width:100%}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:4px;overflow:hidden;width:max-content;max-width:100%}
+.seg button{font-size:13px;background:var(--bg);color:var(--ink);border:0;padding:6px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.meta{color:var(--muted);font-size:12px}
+/* Count board: balls across, strikes down, like a scoreboard */
+.board{display:grid;grid-template-columns:auto repeat(4,40px);gap:4px;align-items:center}
+.board .ax{font-family:var(--display);font-size:13px;color:var(--muted);text-align:center;letter-spacing:.05em}
+.board button{height:40px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;padding:0}
+.board button .c{font-family:var(--mono);font-size:12px}
+.board button .t{font-size:10px;font-family:var(--mono);color:var(--muted);display:flex;align-items:center;gap:3px}
+.board button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.board button[aria-pressed=true] .t{color:var(--bg)}
+.sw{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panehead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable[aria-sort]{color:var(--ink)}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.pt{font-family:var(--body);display:flex;align-items:center;gap:8px}
+.rank{font-family:var(--display);font-size:18px;font-weight:700;width:18px;color:var(--muted)}
+tr.top .rank{color:var(--accent)}
+.bar{position:relative;display:inline-block;width:90px;height:8px;background:var(--cell);border-radius:2px;vertical-align:middle;margin-right:8px}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:2px}
+.lift.pos{color:var(--good)} .lift.neg{color:var(--bad)}
+.use{color:var(--muted);font-size:11px}
+/* Matrix */
+.mx{border-collapse:separate;border-spacing:3px;width:auto}
+.mx th,.mx td{border:0;padding:0;text-align:center}
+.mx td{width:58px;height:40px;border-radius:4px;font-size:12px;cursor:pointer}
+.mx td.best{outline:2px solid var(--ink);outline-offset:-2px;font-weight:600}
+.mx td.sel{box-shadow:inset 0 0 0 2px var(--accent)}
+.mx th{font-size:11px;padding:2px 4px;color:var(--muted);font-family:var(--mono);font-weight:500}
+.mx th.rowh{text-align:right;padding-right:6px}
+.keyrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.ramp{width:120px;height:8px;border-radius:2px}
+.notes{color:var(--muted);font-size:13px;max-width:80ch;display:flex;flex-direction:column;gap:6px}
+.notes b{color:var(--ink);font-weight:600}
+.empty{color:var(--muted);padding:20px 0}
+@media (max-width:560px){.bar{display:none}.mx td{width:44px;height:36px;font-size:11px}.mx th{font-size:10px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pitch Sequencer</h1>
+      <p class="sub">What to throw next, given the count and the last pitch. Predictions come from the perceptual tunnel model, which was trained on 2025 and validated on 2026, and is shown here retrained on both seasons. Each option is the pitcher's real 2026 pitches of that type to that side of the plate, against an average hitter.</p>
+    </div>
+    <div class="meta mono" id="coverage"></div>
+  </header>
+
+  <section class="strip" aria-label="Situation">
+    <div class="ctl">
+      <label class="lbl" for="q">Pitcher</label>
+      <input id="q" type="search" list="plist" placeholder="Type a name" autocomplete="off">
+      <datalist id="plist"></datalist>
+      <div class="meta" id="pmeta"></div>
+    </div>
+    <div class="ctl">
+      <span class="lbl" id="sideLbl">Batter</span>
+      <div class="seg" id="side" role="group" aria-labelledby="sideLbl"></div>
+    </div>
+    <div class="ctl">
+      <span class="lbl" id="countLbl">Count (balls × strikes) · top pick shown</span>
+      <div class="board" id="board" role="group" aria-labelledby="countLbl"></div>
+    </div>
+    <div class="ctl">
+      <span class="lbl" id="prevLbl">Previous pitch</span>
+      <div class="seg" id="prev" role="group" aria-labelledby="prevLbl"></div>
+      <div class="meta" id="prevNote"></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="pane">
+      <div class="panehead">
+        <h2 id="rankTitle">Next pitch</h2>
+        <span class="meta">Click a column to re-rank</span>
+      </div>
+      <div class="tablewrap">
+        <table id="rank">
+          <thead><tr>
+            <th>Pitch</th>
+            <th class="sortable" data-k="2" scope="col">CSW%</th>
+            <th class="sortable" data-k="1" scope="col">Whiff%</th>
+            <th class="sortable" data-k="0" scope="col">Swing%</th>
+            <th class="sortable" data-k="3" scope="col" title="CSW points from how this pitch looks to the hitter, vs the same pitch with a league-typical look">Deception</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="meta">CSW% is called strikes plus whiffs per pitch. Whiff% is per pitch, not per swing. Deception is how many CSW points come from how this pitch looks to the hitter. That covers how far it misses where a fastball would have gone, how it moves across his view at the decision point, and how hard it is to tell from the pitcher's other pitches. It's measured against the same pitch type with a league-typical look, in the same count and sequence.</p>
+    </section>
+
+    <section class="pane">
+      <div class="panehead">
+        <h2>After what</h2>
+        <span class="meta" id="mxNote"></span>
+      </div>
+      <div class="tablewrap"><table class="mx" id="mx"></table></div>
+      <div class="keyrow"><span id="mxLo" class="mono"></span><span class="ramp" id="ramp"></span><span id="mxHi" class="mono"></span><span>CSW% · outlined = best next pitch after that pitch</span></div>
+      <p class="meta">Rows are the previous pitch and columns the next one, in the selected count. Click a cell to make that row the previous pitch.</p>
+    </section>
+  </div>
+
+  <section class="notes">
+    <b>How to read this</b>
+    <span>The model found a real pitch-to-pitch effect. In a single pre-registered 2025 → 2026 test, the perceptual features improved whiff and swing predictions beyond stuff, location, count, the previous pitch and speed. A pitcher's average on these features did <b>not</b> predict his results in held-out games. So use this to choose pitches in a situation, not to rank pitchers.</span>
+    <span>The previous pitch is the pitcher's average pitch of that type, at its average location. The previous result is the most common one leading into the count. The hitter is league-average and seeing the pitcher for the first time. Differences of a point or less between options are within noise.</span>
+    <span>Pitchers with at least 1,000 regular-season pitches in 2026 are included. Each pitch type must be at least 4% of his mix to that side, with at least 40 pitches. Code: polar_tunneling/model/sequencing.py.</span>
+  </section>
+</div>
+
+<script>
+const DATA=/*DATA*/null;
+const NAMES={FF:"Four-seam",SI:"Sinker",FC:"Cutter",SL:"Slider",ST:"Sweeper",CU:"Curveball",KC:"Knuckle curve",CH:"Changeup",FS:"Splitter",SV:"Slurve",CS:"Slow curve",FO:"Forkball",KN:"Knuckleball"};
+const COLORS={FF:"#d22d49",SI:"#fe9d00",FC:"#933f2c",SL:"#c3bd0e",ST:"#ddb33a",CU:"#00d1ed",KC:"#6236cd",CH:"#1dbe3a",FS:"#3bacac",SV:"#93afd4",CS:"#0068ff",FO:"#55ccab",KN:"#888888"};
+const $=id=>document.getElementById(id);
+const sw=t=>`<span class="sw" style="background:${COLORS[t]||'#888'}"></span>`;
+const ids=Object.keys(DATA.pitchers).sort((a,b)=>DATA.pitchers[a].name.localeCompare(DATA.pitchers[b].name));
+const byLabel={};
+const label=id=>{const p=DATA.pitchers[id];return `${p.name} (${p.throws}HP)`};
+$("plist").innerHTML=ids.map(id=>{byLabel[label(id)]=id;return `<option value="${label(id)}"></option>`}).join("");
+$("coverage").textContent=`${ids.length} pitchers · 2026`;
+
+let S={pid:null,side:"R",count:"1-1",prev:null,sortK:2};
+try{const s=JSON.parse(localStorage.getItem("seqState")||"null");if(s&&DATA.pitchers[s.pid])S=Object.assign(S,s)}catch(e){}
+if(!S.pid){
+  // Start on the pitcher with the most 2026 pitches.
+  S.pid=ids.reduce((a,b)=>DATA.pitchers[b].n>DATA.pitchers[a].n?b:a);
+}
+function save(){try{localStorage.setItem("seqState",JSON.stringify(S))}catch(e){}}
+
+function cur(){const p=DATA.pitchers[S.pid];if(!p.sides[S.side])S.side=Object.keys(p.sides)[0];return p.sides[S.side]}
+function prevFor(count,sd){return count==="0-0"?"none":(sd.types.includes(S.prev)?S.prev:sd.types[0])}
+function bestOf(row,k){let b=null;for(const t in row)if(!b||row[t][k]>row[b][k])b=t;return b}
+
+function render(){
+  const p=DATA.pitchers[S.pid];const sd=cur();
+  $("q").value=label(S.pid);
+  $("pmeta").textContent=`${p.n.toLocaleString()} pitches in 2026 · mix vs ${S.side}HH: `+sd.types.map((t,i)=>`${t} ${Math.round(sd.usage[i]*100)}%`).join(", ");
+  $("side").innerHTML=["R","L"].map(s=>`<button type="button" aria-pressed="${s===S.side}" ${p.sides[s]?"":"disabled"} data-s="${s}">${s}HH</button>`).join("");
+  if(S.count!=="0-0")S.prev=prevFor(S.count,sd);
+  // Count board with the top pick per count, given the selected previous pitch.
+  let h='<span></span>'+[0,1,2,3].map(b=>`<span class="ax">${b} B</span>`).join("");
+  for(let s=0;s<3;s++){
+    h+=`<span class="ax">${s} S</span>`;
+    for(let b=0;b<4;b++){
+      const c=`${b}-${s}`;const row=sd.grid[c][c==="0-0"?"none":prevFor(c,sd)];const t=bestOf(row,S.sortK);
+      h+=`<button type="button" data-c="${c}" aria-pressed="${c===S.count}" aria-label="Count ${c}, top pick ${NAMES[t]||t}"><span class="c">${c}</span><span class="t">${sw(t)}${t}</span></button>`;
+    }
+  }
+  $("board").innerHTML=h;
+  const first=S.count==="0-0";
+  $("prev").innerHTML=sd.types.map(t=>`<button type="button" aria-pressed="${!first&&t===S.prev}" ${first?"disabled":""} data-p="${t}">${sw(t)}${t}</button>`).join("");
+  $("prevNote").textContent=first?"0-0 is the first pitch of the at-bat, so there's no previous pitch.":`Previous: ${NAMES[S.prev]||S.prev} at its average location`;
+  // Ranked table
+  const row=sd.grid[S.count][first?"none":S.prev];
+  const list=Object.keys(row).sort((a,b)=>row[b][S.sortK]-row[a][S.sortK]);
+  const max=Math.max(...list.map(t=>row[t][2]),1);
+  $("rankTitle").textContent=`Next pitch · ${S.count}${first?"":` after ${S.prev}`} vs ${S.side}HH`;
+  $("rank").querySelector("tbody").innerHTML=list.map((t,i)=>{const v=row[t];const ui=sd.types.indexOf(t);
+    return `<tr class="${i===0?"top":""}"><td class="pt"><span class="rank">${i+1}</span>${sw(t)}<span>${NAMES[t]||t} <span class="use">${Math.round(sd.usage[ui]*100)}%</span></span></td>
+    <td><span class="bar"><i style="width:${(v[2]/max*100).toFixed(1)}%"></i></span>${v[2].toFixed(1)}</td><td>${v[1].toFixed(1)}</td><td>${v[0].toFixed(1)}</td>
+    <td class="lift ${v[3]>0.05?"pos":v[3]<-0.05?"neg":""}">${v[3]>0?"+":""}${v[3].toFixed(1)}</td></tr>`}).join("");
+  document.querySelectorAll("#rank th.sortable").forEach(th=>{if(+th.dataset.k===S.sortK)th.setAttribute("aria-sort","descending");else th.removeAttribute("aria-sort")});
+  // Matrix
+  const mx=$("mx");
+  if(first){mx.innerHTML=`<tr><td class="empty" style="width:auto;cursor:default">Pick a count other than 0-0 to compare previous pitches.</td></tr>`;$("mxNote").textContent="";$("mxLo").textContent=$("mxHi").textContent="";return}
+  const g=sd.grid[S.count];const vals=[];sd.types.forEach(a=>sd.types.forEach(b=>vals.push(g[a][b][2])));
+  const lo=Math.min(...vals),hi=Math.max(...vals);
+  const mix=x=>`color-mix(in srgb, var(--accent) ${Math.round(10+80*(hi>lo?(x-lo)/(hi-lo):0.5))}%, var(--cell))`;
+  const ink=x=>(hi>lo?(x-lo)/(hi-lo):0.5)>0.55?"var(--bg)":"var(--ink)";
+  let m='<tr><th></th>'+sd.types.map(t=>`<th>${sw(t)} ${t}</th>`).join("")+'</tr>';
+  sd.types.forEach(a=>{const b=bestOf(g[a],2);
+    m+=`<tr><th class="rowh">after ${a}</th>`+sd.types.map(t=>{const v=g[a][t][2];return `<td data-p="${a}" class="${t===b?"best":""} ${a===S.prev?"sel":""}" style="background:${mix(v)};color:${ink(v)}" title="${t} after ${a}: CSW ${v.toFixed(1)}%">${v.toFixed(1)}</td>`}).join("")+'</tr>'});
+  mx.innerHTML=m;
+  $("mxNote").textContent=`${S.count} vs ${S.side}HH`;
+  $("mxLo").textContent=lo.toFixed(1);$("mxHi").textContent=hi.toFixed(1);
+  $("ramp").style.background=`linear-gradient(90deg, ${mix(lo)}, ${mix(hi)})`;
+}
+
+$("q").addEventListener("change",e=>{const id=byLabel[e.target.value];if(id){S.pid=id;save();render()}});
+$("side").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&!b.disabled){S.side=b.dataset.s;save();render()}});
+$("board").addEventListener("click",e=>{const b=e.target.closest("button");if(b){S.count=b.dataset.c;save();render()}});
+$("prev").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&!b.disabled){S.prev=b.dataset.p;save();render()}});
+$("mx").addEventListener("click",e=>{const td=e.target.closest("td[data-p]");if(td){S.prev=td.dataset.p;save();render()}});
+document.querySelectorAll("#rank th.sortable").forEach(th=>th.addEventListener("click",()=>{S.sortK=+th.dataset.k;save();render()}));
+render();
+</script>

@@ -138,27 +138,9 @@ def surprisal(df, by, name):
 
 # ---- per-season feature build ----
 
-def season(year):
-    df = F.build(year)
-    df = df[df.release_spin_rate_rpm.notna()].copy()
-    for c in ["pitch_type", "stand", "prev_pitch_type"]:
-        df[c] = df[c].astype(str)
-    df = df.merge(primary_fastball(df), on=PS, how="left")
-    df = df.merge(batter_tau(df), left_on="batter", right_index=True, how="left")
-    df["tau_b"] = df.tau_b.fillna(TAU0)
-    df = batter_rates(df)
-    df["fb_dv"] = df.release_speed_mph - df.fb_release_speed_mph
-    df["fb_dmx"] = df.mov_x - df.fb_mov_x
-    df["fb_dmz"] = df.pfx_z_ft - df.fb_pfx_z_ft
-    df["fb_drx"] = df.rel_x - df.fb_rel_x
-    df["fb_drz"] = df.release_pos_z_ft - df.fb_release_pos_z_ft
+def commit_features(df):
+    """P2 and P3: what the hitter sees at his commit point (needs tau_b and the fb_ columns)."""
     side = np.where(df.stand == "L", -1, 1)
-    df["prev_loc_x"] = df.prev_plate_x_ft * side
-    df["prev_loc_z"] = (df.prev_plate_z_ft - df.sz_bot_ft) / (df.sz_top_ft - df.sz_bot_ft)
-    d = df.prev_description.fillna("")
-    df["prev_desc"] = np.select(
-        [d.isin(F.WHIFF), d == "called_strike", d.str.startswith("foul"), d.isin({"ball", "blocked_ball"}), d == ""],
-        ["whiff", "called", "foul", "ball", "none"], "other")
     eye = eye_of(df)
     tc = np.maximum(df.tf.to_numpy() - df.tau_b.to_numpy(), 0.05)
     p, v = F.position(df, tc), velocity(df, tc)
@@ -184,6 +166,32 @@ def season(year):
     df["sep_rate_vs_fb"] = (sep(tc + h, fbtf) - sep(tc - h, fbtf)) / (2 * h)
     for c in ["miss_x_in", "miss_z_in", "miss_t_ms", "ang_speed_vs_fb", "sep_rate_vs_fb"]:
         df.loc[df.fb_tf.isna(), c] = np.nan
+
+    return df
+
+def season(year):
+    df = F.build(year)
+    df = df[df.release_spin_rate_rpm.notna()].copy()
+    for c in ["pitch_type", "stand", "prev_pitch_type"]:
+        df[c] = df[c].astype(str)
+    df = df.merge(primary_fastball(df), on=PS, how="left")
+    df = df.merge(batter_tau(df), left_on="batter", right_index=True, how="left")
+    df["tau_b"] = df.tau_b.fillna(TAU0)
+    df = batter_rates(df)
+    df["fb_dv"] = df.release_speed_mph - df.fb_release_speed_mph
+    df["fb_dmx"] = df.mov_x - df.fb_mov_x
+    df["fb_dmz"] = df.pfx_z_ft - df.fb_pfx_z_ft
+    df["fb_drx"] = df.rel_x - df.fb_rel_x
+    df["fb_drz"] = df.release_pos_z_ft - df.fb_release_pos_z_ft
+    side = np.where(df.stand == "L", -1, 1)
+    df["prev_loc_x"] = df.prev_plate_x_ft * side
+    df["prev_loc_z"] = (df.prev_plate_z_ft - df.sz_bot_ft) / (df.sz_top_ft - df.sz_bot_ft)
+    d = df.prev_description.fillna("")
+    df["prev_desc"] = np.select(
+        [d.isin(F.WHIFF), d == "called_strike", d.str.startswith("foul"), d.isin({"ball", "blocked_ball"}), d == ""],
+        ["whiff", "called", "foul", "ball", "none"], "other")
+    df = commit_features(df)
+    eye = eye_of(df)
 
     # P4: Bayesian observer at 175 ms before arrival and at release.
     df = posteriors(df, *az_el(F.position(df, df.tf.to_numpy() - TAU0), eye), "commit")
