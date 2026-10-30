@@ -26,7 +26,7 @@ def main():
         F.TAU = tau
         df = S.prep()
         for subset, d in [("all pairs", df), ("different-type pairs", df[~df.same_type])]:
-            for y, data in [("whiff | swing", d[d.swing]), ("swing", d)]:
+            for y, data in [("whiff \\| swing", d[d.swing]), ("swing", d)]:
                 col = "whiff" if y.startswith("whiff") else "swing"
                 tr, te = data[data.month <= 7], data[data.month >= 8]
                 _, prev = S.fit(tr, te, col, S.BASE + S.PREV)

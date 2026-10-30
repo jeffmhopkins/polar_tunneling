@@ -112,7 +112,7 @@ def add_outcomes_and_controls(df):
     side = np.where(df.stand == "L", -1, 1)
     df["loc_x"] = df.plate_x_ft * side
     df["loc_z"] = (df.plate_z_ft - df.sz_bot_ft) / (df.sz_top_ft - df.sz_bot_ft)
-    # Movement mirrored so arm side is + for both hands.
+    # Movement and release x mirrored for lefties so both hands share one sign (arm side is -).
     arm = np.where(df.p_throws == "L", -1, 1)
     df["mov_x"] = df.pfx_x_ft * arm
     df["rel_x"] = df.release_pos_x_ft * arm

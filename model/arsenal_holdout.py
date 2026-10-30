@@ -68,7 +68,7 @@ def main():
             nulls.append(A.fit(a, bs, y, S.BASE + A.DIFF + A.ARS))
         ng = (base - np.array(nulls)) * 1000
         gain = (base - full) * 1000
-        rows.append({"outcome": {"whiff": "whiff | swing", "swing": "swing", "csw": "CSW"}[y],
+        rows.append({"outcome": {"whiff": "whiff \\| swing", "swing": "swing", "csw": "CSW"}[y],
                      "2026 n": len(b), "gain x1000": round(gain, 2), "null mean": round(ng.mean(), 2),
                      "null max": round(ng.max(), 2), "share of nulls beaten": f"{(gain > ng).mean():.0%}"})
         print(rows[-1], flush=True)

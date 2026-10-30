@@ -140,7 +140,7 @@ def check_lift(df):
             nulls.append(fit(s[s.month <= 7], s[s.month >= 8], y, BASE + PREV + TUNNEL)[1])
         nulls = np.array(nulls)
         rows.append({
-            "outcome": {"whiff": "whiff | swing", "swing": "swing", "csw": "CSW"}[y],
+            "outcome": {"whiff": "whiff \\| swing", "swing": "swing", "csw": "CSW"}[y],
             "test n": len(te),
             "base log-loss": round(base, 4),
             "+tunnel (no prev)": round((base - tun_only) * 1000, 2),

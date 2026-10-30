@@ -246,7 +246,7 @@ def main():
         a, b = (tr[tr.swing], te[te.swing]) if y == "whiff" else (tr, te)
         m0, l0 = fit(a, b, y, CONTROLS)
         m1, l1 = fit(a, b, y, CONTROLS + ALL_P)
-        row = {"outcome": "whiff | swing" if y == "whiff" else "swing", "2026 n": len(b),
+        row = {"outcome": "whiff \\| swing" if y == "whiff" else "swing", "2026 n": len(b),
                "M0 log-loss": round(l0, 4), "M1 gain x1000": round((l0 - l1) * 1000, 2)}
         for name, cols in P.items():
             row[f"+{name}"] = round((l0 - fit(a, b, y, CONTROLS + cols)[1]) * 1000, 2)

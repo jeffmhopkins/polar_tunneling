@@ -23,6 +23,11 @@ count, batter side, previous pitch and hitter. [README.md](README.md) has the fi
 - **Report everything.** The script writes `model/<name>_report.md`, including failures. Then add a section
   to `model/README.md` and a row to its study table, and to the findings table in `README.md` if it changes
   the story. Anything outside the pre-registration is labelled exploratory.
+- **Document the math.** Every `*_report.md` ends with a hand-written **How the model works** (the math,
+  step by step, from the trajectory to the table) and **Variables** (name, meaning, units, source column)
+  section, and every `PREREG_*.md` ends with **Variables**. The scripts don't write these sections: when a
+  script rewrites its report, carry them over. A new report or pre-registration needs both, with
+  definitions matching [model/README.md](model/README.md#variables).
 - **Say what the numbers can't.** Gains are observational: pitchers, catchers and scouting choose pitches
   too, so the sequencer's gains are upper bounds. Keep that caveat with any new result.
 - **Writing style.** Plain sentences, numbers with their CI, "pts" for percentage points, CSW per pitch and
@@ -68,3 +73,15 @@ refresh the screenshot in `docs/img/` on `main` if it changed.
 The open ideas, none started: pitch design suggestions (how a change in a pitch's movement or release
 would change its deception against the rest of the arsenal), a drift check (train early 2026, test late
 2026), and a short write-up of the method and results.
+
+## Variables
+
+| Variable | Meaning | Units | Source |
+|---|---|---|---|
+| `TAU` | Commit point: how long before the ball reaches the front of the plate the hitter must decide. Fixed at 0.175 s unless stated | s | `features.TAU` |
+| `tau_b` | P1. Hitter's commit time from bat tracking: $`0.175 \times \tilde\rho_b/\bar\rho`$, clipped to 0.125-0.225 s, where $`\rho`$ = swing length / bat speed (swings over 40 mph), $`\bar\rho`$ the league mean and $`\tilde\rho_b`$ the batter's mean shrunk to it with 50 prior swings. 0.175 s if he has none | s | `perceptual.batter_tau` |
+| `CSW` | Share of pitches that are a called strike or whiff (`csw` averaged) | % or pts | `csw` |
+| `pts` | Percentage points (a rate difference x100) | pts | - |
+| `runs per 100 pitches` | Run value per 100 pitches; negative means fewer runs allowed | runs | `damage_sequencer.py`, `runs_compare.py` |
+| `log-loss` | $`-\frac1n\sum_i [y_i\log\hat p_i + (1-y_i)\log(1-\hat p_i)]`$ on held-out pitches; lower is better | nats per pitch | `sklearn.metrics.log_loss` |
+| `gain x1000` | $`1000\,(L_{\text{without}} - L_{\text{with}})`$: how much adding the features lowers held-out log-loss. + helps | nats per 1000 pitches | computed in each script |

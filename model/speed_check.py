@@ -51,7 +51,7 @@ def main():
         _, l0 = M.fit(a, b, y, base)
         _, l1 = M.fit(a, b, y, base + M.ALL_P)
         gain = (l0 - l1) * 1000
-        row = {"outcome": "whiff | swing" if y == "whiff" else "swing", "2026 n": len(b),
+        row = {"outcome": "whiff \\| swing" if y == "whiff" else "swing", "2026 n": len(b),
                "M0s log-loss": round(l0, 4), "M1s gain x1000": round(gain, 2),
                "share of original gain": f"{gain / ORIGINAL[y]:.0%}"}
         for name, cols in M.P.items():

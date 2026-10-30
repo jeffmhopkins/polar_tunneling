@@ -105,6 +105,30 @@ The rules that matter most:
 [model/README.md](model/README.md) has every study in order, with its numbers and caveats. The [methods and results review](https://jeffmhopkins.github.io/polar_tunneling/review/) puts
 the definitions, test design and picker comparison on one page.
 
+## Terms
+
+The terms used above. [model/README.md](model/README.md#variables) defines every model variable, and each
+report walks through its own math under **How the model works**.
+
+| Variable | Meaning | Units | Source |
+|---|---|---|---|
+| `CSW` | Share of pitches that are a called strike or whiff (`csw` averaged) | % or pts | `csw` |
+| `pts` | Percentage points (a rate difference x100) | pts | - |
+| `log-loss` | $`-\frac1n\sum_i [y_i\log\hat p_i + (1-y_i)\log(1-\hat p_i)]`$ on held-out pitches; lower is better | nats per pitch | `sklearn.metrics.log_loss` |
+| `gain x1000` | $`1000\,(L_{\text{without}} - L_{\text{with}})`$: how much adding the features lowers held-out log-loss. + helps | nats per 1000 pitches | computed in each script |
+| `r` | Pearson correlation | -1 to 1 | computed in each script |
+| `split-half r` | Pearson correlation of a group's value in odd-`game_pk` games with its value in even-`game_pk` games | r | computed in each script |
+| `95% CI` | 2.5th to 97.5th percentile of the statistic over a pitcher bootstrap: pitchers drawn with replacement, each pitcher's pitches weighted by how often he was drawn | - | `validate_sequencer.boot` |
+| `Tunnel+` | A per-pitcher tunnel score scaled to mean 100, SD 10, as proposed in the original outline. Not built, because the pitcher-level tests failed | index | `docs/original_outline.md` |
+| `Stuff+` | FanGraphs' pitch-quality grade (100 = average) from velocity, movement, spin and release; Pitching+ also grades location, and PitchingBot is a separate pitch model. Used here as public comparison pickers | index | `datamining/outputs/fangraphs_grades_2025.csv` |
+| `P1-P6` | The six perceptual feature blocks: timing, fastball-prior miss, optical motion, ambiguity, expectation, at-bat build-up | - | `perceptual.P` |
+| `top pick` | The candidate type with the highest predicted CSW in the cell | - | `validate_sequencer.test_pitches` |
+| `K pts` | Strikeout rate difference in percentage points | pts | `validate_atbat.py` |
+| `adherence` | Mean over a PA's scored pitches of (matched minus the pitcher x side x count 2026 match rate) | share | `validate_atbat.scored_pitches`, `pa_table` |
+| `xwoba` | Expected wOBA of the plate appearance, on its last pitch: from exit speed and launch angle for a ball in play, the wOBA weight for a walk or HBP, 0 for a strikeout | wOBA scale | Statcast column `estimated_woba_using_speedangle` (`datamining/outputs`) |
+| `runs per 100 pitches` | Run value per 100 pitches; negative means fewer runs allowed | runs | `damage_sequencer.py`, `runs_compare.py` |
+| `TAU` | Commit point: how long before the ball reaches the front of the plate the hitter must decide. Fixed at 0.175 s unless stated | s | `features.TAU` |
+
 ## Layout
 
 | Folder | What's in it |
