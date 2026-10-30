@@ -29,6 +29,7 @@ Every tunneling test, in the order it was run: the features, the pre-registratio
 | [Model comparison, game report](#model-comparison-and-game-report-pre-registered-prereg_gamemd) | [PREREG_game.md](PREREG_game.md) | `game_report.py` | [report](game_report.md) | Fail (perceptual vs standard) |
 | [Comparison by runs, public models](#model-comparison-by-runs-and-public-models-pre-registered-prereg_runsmd) | [PREREG_runs.md](PREREG_runs.md) | `runs_compare.py` | [report](runs_report.md) | Fail (perceptual vs standard); beats Pitching+, PitchingBot |
 | [Location](#location-in-the-sequencer-pre-registered-prereg_locationmd) | [PREREG_location.md](PREREG_location.md) | `location_compare.py` | [report](location_report.md) | Fail |
+| [Group-reference read](#group-reference-read-pre-registered-prereg_groupmd) | [PREREG_group.md](PREREG_group.md) | `group_read.py` | [report](group_report.md) | Pass (whiff, small); fail (swing) |
 
 `pregame_report.py` builds the pre-game plan from the standard run-value model, and `sequencing.py`
 builds the original CSW sequencer data (`sequencing.json`; `sequencing_2025model.json` is the 2025-only
@@ -495,6 +496,26 @@ Reading: choosing location in the real sequence context does not reveal a
 tunneling effect on decisions either. Across type, runs and location, the
 perceptual features improve forecasts but not picks.
 
+## Group-reference read (pre-registered, `PREREG_group.md`)
+
+`group_read.py` writes `group_report.md`. P2 measures the post-commit miss
+from a fastball read. This test replaces the fastball with the group of the
+pitcher's types that look like the pitch at commit: each type is weighted by
+the P4 observer's posterior, each extrapolates from the commit point with its
+own mean acceleration, and the read is the weighted mean crossing. Four
+features: the miss in x, z and time, and the weighted spread of the group's
+crossings.
+
+- **Primary: passed.** Whiff | swing, M1 + G over M1: +0.52 per 1000 (nulls
+  0.03 to 0.27).
+- Head to head over M0: the group read +0.91, the fastball read (P2) +0.36.
+- Swing: +0.18, under the 0.3 bar.
+
+Reading: if tunneling is measured post-commit, the look-alike group is a
+better reference than the fastball. It is still a small forecast gain, and it
+has not been run through the sequencer, where earlier perceptual blocks did
+not change picks.
+
 ## Variables
 
 Every variable used above. The reports define the ones they use the same way.
@@ -578,6 +599,11 @@ Every variable used above. The reports define the ones they use the same way.
 | `post_true_commit` | P4. Posterior probability, from the same view, of the pitch's true type | probability | `perceptual.posteriors` |
 | `post_fb_release` | P4. As `post_fb_commit`, from the direction of the release point | probability | `perceptual.posteriors` |
 | `post_true_release` | P4. As `post_true_commit`, from the direction of the release point | probability | `perceptual.posteriors` |
+| `w_k` | G. Posterior weight of type $`k`$ from the ball's direction 175 ms before arrival (the P4 observer's full posterior) | probability | `group_read.group_features` |
+| `gmiss_x_in` | G. Horizontal miss of the posterior-weighted group read at the plate. Batter-oriented, + away | in | `group_read.group_features` |
+| `gmiss_z_in` | G. Vertical miss of the group read; + means higher than the read | in | `group_read.group_features` |
+| `gmiss_t_ms` | G. Arrival-time miss of the group read; + means later | ms | `group_read.group_features` |
+| `gspread_in` | G. Weighted spread of the look-alike types' plate crossings around the group read | in | `group_read.group_features` |
 | `surprise_count` | P5. Surprisal of the type given the count, $`-\log_2 P(\text{type} \mid \text{pitcher, side, count})`$, usage smoothed with 5 prior pitches | bits | `perceptual.surprisal` |
 | `count` | `balls-strikes` before the pitch, e.g. `1-2` (12 values) | category | built from `balls`, `strikes` in `features.add_outcomes_and_controls` |
 | `surprise_prev` | P5. Surprisal given the previous pitch type, $`-\log_2 P(\text{type} \mid \text{pitcher, side, previous type})`$; missing on a PA's first pitch | bits | `perceptual.surprisal` |

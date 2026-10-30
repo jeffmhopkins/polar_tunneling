@@ -101,6 +101,7 @@ The rules that matter most:
 | Does picking by runs instead of CSW help? | **Yes**, -0.27 runs per 100 pitches where the picks differ | [damage](model/damage_report.md) |
 | Does a hitter-specific sequencer help? Does per-hitter timing? | Hitter-specific picks yes (+2.9 CSW pts where they differ). Fitted timing no | [hitter sequencer](model/hitter_sequencer_report.md), [hitter timing](model/hitter_timing_report.md) |
 | Do the perceptual features change the *best* pitch, by CSW, runs or location? | No. They improve forecasts but rarely change the pick | [game](model/game_report.md), [runs](model/runs_report.md), [location](model/location_report.md) |
+| After commit, is the pitcher's look-alike group a better reference than the fastball? | **Yes, small.** +0.52 per 1000 on whiff per swing over the full perceptual model, and 0.91 vs 0.36 head to head with the fastball read. Not tested on picks | [group read](model/group_report.md) |
 
 [model/README.md](model/README.md) has every study in order, with its numbers and caveats. The [methods and results review](https://jeffmhopkins.github.io/polar_tunneling/review/) puts
 the definitions, test design and picker comparison on one page.
