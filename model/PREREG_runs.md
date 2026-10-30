@@ -48,3 +48,18 @@ using actual delta_run_exp.
 
 The Orioles game page (game 823491) gets RA, RB and RC picks and RA's
 runs saved per 100 for every candidate. Descriptive only.
+
+## Amendment: public models (before any picker was scored)
+
+Jeff asked how the model compares with public models. Three more pickers,
+from FanGraphs' published 2025 pitch-type grades
+(`datamining/pull_fangraphs_grades.py`, `fangraphs_grades_2025.csv`):
+
+- **FS. Stuff+**, **FP. Pitching+** and **FB. PitchingBot** (overall grade):
+  pick = the type in his menu with the highest 2025 grade. Our ST and SV map
+  to FanGraphs' SL, everything else by its own code. No pick when fewer than
+  two of his menu types have a grade.
+
+These grades ignore count and sequence, so the same type is picked in every
+cell. They are scored like the others (runs and CSW), with RA minus each and
+A minus each as secondary comparisons. The primary test is unchanged.
