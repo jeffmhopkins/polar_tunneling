@@ -306,3 +306,24 @@ Reading: modelling the count and the pitch's real shape and location is what
 beats the public grades, which ignore both. The perceptual features still
 don't change the pick enough to matter, whether pitches are chosen by
 strikes or by runs.
+
+## Location in the sequencer (pre-registered, `PREREG_location.md`)
+
+`location_compare.py` writes `location_report.md` and the location picks
+for the game page. Each test pitch is scored in its real context (count, the
+actual previous pitch and its location, the last fastball seen) against
+every (type, Statcast zone) option in the pitcher's 2026 menu, using the
+2025 run-value models. 71,670 test pitches (15% sample of 2026).
+
+- **Primary: did not pass.** Perceptual (LA) minus standard (LB) type + zone
+  picks: -0.07 runs per 100 pitches (95% CI -0.71 to +0.50); +1.90 CSW pts
+  (CI -0.23 to +4.19). They agree on type and zone 60% of the time.
+- A 2025 league location chart (LZ) is close too: LA minus LZ -0.58 runs per
+  100 (CI -1.54 to +0.45).
+- Pitches that land in the picked zone do far better than others (about -5
+  runs per 100), but that is mostly where pitches end up, which a league chart
+  captures as well, and it mixes in command.
+
+Reading: choosing location in the real sequence context does not reveal a
+tunneling effect on decisions either. Across type, runs and location, the
+perceptual features improve forecasts but not picks.
