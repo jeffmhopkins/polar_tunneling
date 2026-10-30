@@ -143,3 +143,27 @@ Caveat: this is observational. Pitchers choose pitches with knowledge of the
 batter and the situation, which these comparisons don't control. The
 after-what gap being larger than predicted suggests some of that selection is
 included.
+
+## Tool vs pitcher choice (pre-registered, `PREREG_choice.md`)
+
+`validate_choice.py` writes `choice_report.md`. It controls the 4.48-pt
+top-pick gap for:
+
+- pitcher x side x count
+- the batter's 2025 CSW-against rates (overall and against the pitch's class)
+- outs, runners, inning and platoon
+- the previous pitch's class and result
+
+Results:
+
+- **Adjusted gap: +3.56 pts** (95% CI +3.13 to +4.00), 80% of the raw gap.
+- **Inverse-propensity-weighted gap: +4.16 pts** (CI +3.67 to +4.69).
+- When the top pick was unlikely given the situation (lowest propensity
+  tercile), throwing it anyway still gained 5.3 pts. In the usual-choice
+  tercile the gain was 3.8 pts.
+
+So most of the gain is not explained by pitchers already choosing well for
+the batter and the situation. What remains is an upper bound: catcher,
+scouting reports and game plans are not measured. Part of it is also that
+the top pick tends to be the pitcher's best-CSW type, which the naive pick
+captures (validation test 2: the tool beats that by 1.8 pts).
