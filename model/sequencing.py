@@ -22,8 +22,13 @@ pitch looks, not about the count it is thrown in.
 
 Usage:
     python model/sequencing.py           # writes model/sequencing.json
+    python model/sequencing.py --train-years 2025 --out model/sequencing_2025model.json
+        # out-of-sample version for validate_sequencer.py: the model, the
+        # previous-result lookup and batter medians come from 2025 only;
+        # 2026 is used only for pitch shapes, locations and usage (no outcomes)
 """
 
+import argparse
 import json
 from pathlib import Path
 
@@ -148,12 +153,18 @@ def build_cells(sub, pid, side, types, base, tables, prev_desc_by_count, medians
     return cells
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train-years", type=int, nargs="+", default=[2025, 2026])
+    parser.add_argument("--out", type=Path, default=OUT)
+    args = parser.parse_args()
     df = load()
-    models = train(df)
-    d26 = df[df.game_date.astype(str).str.startswith("2026")]
+    season = df.game_date.astype(str).str[:4].astype(int)
+    fit_on = df[season.isin(args.train_years)]
+    models = train(fit_on)
+    d26 = df[season == 2026]
     base, tables = usage_tables(d26)
-    prev_desc_by_count = typical_prev_desc(d26)
-    medians = d26[["bat_whiff_rate", "bat_swing_rate"]].median()
+    prev_desc_by_count = typical_prev_desc(fit_on)
+    medians = fit_on[["bat_whiff_rate", "bat_swing_rate"]].median()
     type_median = d26.groupby("pitch_type", observed=True)[LOOK].median()
     counts = d26.groupby("pitcher").size()
     pitchers = counts[counts >= MIN_PITCHES].index
@@ -193,8 +204,8 @@ def main():
             out["pitchers"][str(int(pid))] = entry
         if i % 25 == 0:
             print(i, entry["name"], flush=True)
-    OUT.write_text(json.dumps(out, separators=(",", ":")))
-    print("wrote", OUT, OUT.stat().st_size // 1024, "KB")
+    args.out.write_text(json.dumps(out, separators=(",", ":")))
+    print("wrote", args.out, args.out.stat().st_size // 1024, "KB")
 
 if __name__ == "__main__":
     main()
