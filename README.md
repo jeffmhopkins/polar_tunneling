@@ -19,6 +19,28 @@ on 2026, and every test is written down and committed before its outcome is comp
 > that history and builds the models, tests and report pages on top of it. The original outline is in
 > [docs/original_outline.md](docs/original_outline.md).
 
+## Does polar tunneling work?
+
+> [!IMPORTANT]
+> **As a pitch-quality score, no. As a description of what the hitter sees, a little.** The original idea
+> was that how closely a pitch's path matches the pitcher's fastball, seen from the batter's eye in
+> polar coordinates, would predict results beyond what Stuff+ already captures, and could be scaled to a
+> Tunnel+. After pre-registered tests trained on 2025 and checked once on 2026, that score doesn't hold
+> up. What survived is smaller: the ball's position and motion at the moment the hitter decides adds a
+> real but small amount to pitch-by-pitch forecasts.
+
+| The original idea | Verdict | The evidence |
+|---|---|---|
+| Path similarity to the fastball predicts whiffs and strikes beyond stuff and location | **No** | Pitch types and locations already set 71% of early separation. Adding the tunnel features changed held-out log-loss by -0.6 to +0.5 per 1000, and raw whiff rates ran the wrong way (21% for the closest tenth of pitches, 28% for the farthest). The fastball version's weak 2025 signal didn't replicate in 2026 |
+| A per-pitcher Tunnel+ (mean 100, SD 10) | **No** | Pitchers' tunnel values are very stable (split-half 0.93) because they reflect the arsenal, but they don't predict a pitcher's whiffs in other games (r = 0.02) |
+| The hitter's view at the decision point carries information | **Yes, small** | Perceptual features improved 2026 forecasts (whiff per swing +1.8, swing +5.9 per 1000 log-loss), and the gain survived speed controls. Most of it is the ball's raw position and motion at the decision point. Expressing it as angles from the eye adds little on top |
+| Each hitter has their own decision point | **No** | Fitted per-hitter timing made 2026 forecasts worse and didn't repeat between halves of 2025 (r = 0.04) |
+| Tunneling should change which pitch to throw | **Rarely** | A sequencer with the perceptual features picks no better than the same model without them: +0.16 CSW pts (95% CI -0.06 to +0.38), and the same by runs |
+
+The useful thing to come out of it is the [Pitch Sequencer](#try-it). It works because it models stuff,
+location and count well, not because of tunneling. These tests cover the copy of the original repository
+this one was made from. The original has since added path-integral correlations, which weren't tested here.
+
 ## Try it
 
 <table>
@@ -38,8 +60,9 @@ Every page runs in the browser with no server. [The index](https://jeffmhopkins.
 ## For humans
 
 > [!TIP]
-> **Start with [What it found](#what-it-found)**, the one-table summary. Every row links to the report
-> behind it, and [model/README.md](model/README.md) walks through each study in the order it was run.
+> **Start with [Does polar tunneling work?](#does-polar-tunneling-work)**, then [What it found](#what-it-found),
+> which covers every study and links to the report behind it. After that, [model/README.md](model/README.md)
+> walks through each study in the order it was run.
 
 - To see the results rather than read them, open the [pages above](#try-it): the Pitch Sequencer is the
   one to start with.
@@ -74,13 +97,6 @@ The rules that matter most:
 | Does picking by runs instead of CSW help? | **Yes**, -0.27 runs per 100 pitches where the picks differ | [damage](model/damage_report.md) |
 | Does a hitter-specific sequencer help? Does per-hitter timing? | Hitter-specific picks yes (+2.9 CSW pts where they differ). Fitted timing no | [hitter sequencer](model/hitter_sequencer_report.md), [hitter timing](model/hitter_timing_report.md) |
 | Do the perceptual features change the *best* pitch, by CSW, runs or location? | No. They improve forecasts but rarely change the pick | [game](model/game_report.md), [runs](model/runs_report.md), [location](model/location_report.md) |
-
-> [!IMPORTANT]
-> **The short version.** A per-pitcher Tunnel+ doesn't hold up. A perceptual signal does, pitch to pitch,
-> and a sequencer built on the whole model beats simple rules and FanGraphs' Stuff+, Pitching+ and
-> PitchingBot grades on 2026. Most of that comes from modelling stuff, location and count well; the
-> tunneling features sharpen the forecasts more than the picks. The gains are observational upper bounds,
-> since pitchers and catchers scout too.
 
 [model/README.md](model/README.md) has every study in order, with its numbers and caveats.
 
