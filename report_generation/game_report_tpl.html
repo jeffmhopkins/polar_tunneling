@@ -1,0 +1,257 @@
+<title>Game Pitch Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a scorebook. Header line score, then the verdict, then the game charted by half-inning and plate appearance. */
+:root {
+  --paper: #f6f7f4; --card: #ffffff; --ink: #1b2126; --muted: #5f6b70; --rule: #d9ded9;
+  --accent: #df4601; --accent-soft: #fbe3d6; --good: #1f7a4d; --good-soft: #dcefe4; --bad: #a3312a; --bad-soft: #f6dedb;
+  --a: #df4601; --b: #2b6cb0; --c: #6b5aa6; --d: #3d7d74; --e: #8a8a7a;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
+  --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
+  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
+  --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
+  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; color-scheme: dark }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.25rem; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 .78rem var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.mono, td.n, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 14px; }
+.lede { color: var(--muted); }
+header { display: grid; gap: 14px; }
+.linescore { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline; font-family: var(--display); font-size: 1.5rem; }
+.linescore b { font-size: 2.4rem; color: var(--accent); }
+.tbl { overflow-x: auto; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 .72rem var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.key { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; display: grid; gap: 8px; }
+.chart { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 12px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.chart text { fill: var(--ink); font: 12px var(--body); }
+.chart .tick { fill: var(--muted); font: 11px var(--mono); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls button { font: 500 .85rem var(--body); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); cursor: pointer; }
+.controls button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.controls button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.half { display: grid; gap: 10px; }
+.half > h3 { border-bottom: 2px solid var(--ink); padding-bottom: 4px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.half > h3 span { font: 500 .85rem var(--body); color: var(--muted); align-self: end; }
+.pa { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; }
+.pa > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.pa > summary::-webkit-details-marker { display: none; }
+.pa > summary .who { font-weight: 600; }
+.pa > summary .res { margin-left: auto; font-family: var(--mono); font-size: .85rem; }
+.res.good { color: var(--good); } .res.bad { color: var(--bad); }
+.pa[open] > summary { border-bottom: 1px solid var(--rule); }
+.pitches { overflow-x: auto; }
+.pitches table { font-size: .85rem; min-width: 760px; }
+.chip { display: inline-block; font: 500 .78rem var(--mono); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--rule); color: var(--muted); }
+.chip.hit { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.thrown { font: 600 .85rem var(--mono); }
+.outc.csw { color: var(--good); font-weight: 600; } .outc.dmg { color: var(--bad); font-weight: 600; }
+.cands { display: flex; gap: 4px; flex-wrap: wrap; }
+.bar { display: grid; grid-template-columns: 2.6em 1fr; gap: 6px; align-items: center; font: .75rem var(--mono); }
+.note { font-size: .85rem; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .85rem; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.two > * { min-width: 0; }
+[hidden] { display: none !important; }
+.wrap > *, section > *, #halves > *, .half > *, .pa { min-width: 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="title"></h1>
+    <div class="linescore" id="linescore"></div>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <section id="season-sec">
+    <h2>Which picker finds better pitches?</h2>
+    <p class="lede" id="season-lede"></p>
+    <div class="chart" id="season-chart"></div>
+    <div class="tbl"><table id="season-tbl"></table></div>
+    <div class="callout" id="season-callout"></div>
+    <h3>Predicting what actually happened on every 2026 pitch</h3>
+    <p class="lede">Log-loss on all 2026 regular-season pitches as thrown (lower is better). This is a different question from picking: how well each model forecasts the result of the pitch the pitcher chose.</p>
+    <div class="tbl"><table id="ll-tbl"></table></div>
+  </section>
+
+  <section>
+    <h2>This game, picker by picker</h2>
+    <p class="lede" id="game-lede"></p>
+    <div class="tbl"><table id="game-tbl"></table></div>
+    <p class="note" id="game-note"></p>
+  </section>
+
+  <section>
+    <h2>Pitch by pitch</h2>
+    <p class="lede">Each plate appearance lists the pitch actually thrown, its result, and what each picker would have thrown in that count after that previous pitch. A green chip means that picker agreed with the pitch thrown. The last column lists every pitch he could have thrown with the perceptual model's predicted CSW, best first, and marks the pitch thrown in green. Open a plate appearance to see its pitches. A pitcher needs at least 300 regular-season pitches outside this game for a menu<span id="nomenu"></span>.</p>
+    <div class="legend" id="legend"></div>
+    <div class="controls" id="filters" role="group" aria-label="Show pitcher"></div>
+    <div id="halves" class="half-list" style="display:grid;gap:28px"></div>
+  </section>
+
+  <section>
+    <h2>How to read this</h2>
+    <div class="two">
+      <p class="note">Every model was trained on 2025 pitches only, so nothing it says about this game comes from 2026 results. Each candidate pitch is represented by the same real 2026 pitches from that pitcher (his actual shapes and locations), placed into the count after the previous pitch, against an average hitter. CSW means a called strike or a whiff.</p>
+      <p class="note">One game is a few hundred pitches, so its numbers mostly show what each picker does, not which is best. The season comparison at the top, over all 2026 pitches, is the evidence. It is observational: pitchers choose with knowledge of the hitter, the catcher and the game plan that these models don't have.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const DATA = __DATA__;
+const M = ["A", "B", "C", "D", "E"];
+const SHORT = { A: "Perceptual", B: "Standard", C: "Stuff-only", D: "Best for count", E: "Habit" };
+const TYPES = { FF: "four-seam", SI: "sinker", FC: "cutter", SL: "slider", ST: "sweeper", CU: "curveball", KC: "knuckle curve", SV: "slurve", CH: "changeup", FS: "splitter", FO: "forkball", KN: "knuckleball" };
+const DESC = { ball: "Ball", blocked_ball: "Ball in dirt", called_strike: "Called strike", swinging_strike: "Whiff", swinging_strike_blocked: "Whiff", foul: "Foul", foul_tip: "Foul tip", hit_into_play: "In play", hit_by_pitch: "Hit by pitch", foul_bunt: "Foul bunt", missed_bunt: "Missed bunt", pitchout: "Pitchout" };
+const EV = s => s ? s.replace(/_/g, " ") : "";
+const $ = id => document.getElementById(id);
+const pct = (x, d = 0) => x == null ? "–" : (x * 100).toFixed(d) + "%";
+const g = DATA.game, name = id => DATA.names[id] || id;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+$("eyebrow").textContent = `${g.date} · ${g.series || "Regular season"}`;
+$("title").textContent = `${g.away} at ${g.home}`;
+$("linescore").innerHTML = `<span>${esc(g.away)} <b>${g.away_score}</b></span><span>${esc(g.home)} <b>${g.home_score}</b></span>`;
+$("lede").textContent = `Every pitch of the game, with what five different pitch pickers would have thrown and what actually happened. ${DATA.n_pitches} pitches, ${DATA.n_scored} of them from pitchers with enough 2026 pitches to build a pitch menu.`;
+
+// ---- season ----
+const S = DATA.season && DATA.season.season;
+if (!S) { $("season-sec").hidden = true; } else {
+  const n = S.A.n;
+  $("season-lede").textContent = `For each picker: over ${n.toLocaleString()} 2026 regular-season pitches, how much more often did the pitch end in a called strike or whiff when the pitcher happened to throw that picker's choice, compared with the same count when he didn't? Bigger is better. Lines show 95% intervals from resampling pitchers.`;
+  const W = 760, rowH = 46, top = 28, left = 190, right = 64, H = top + rowH * M.length + 24;
+  const lo = Math.min(0, ...M.map(m => S[m].ci[0])), hi = Math.max(...M.map(m => S[m].ci[1]));
+  const x = v => left + (v - lo) / (hi - lo) * (W - left - right);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="CSW gap by picker">`;
+  const step = hi - lo > 6 ? 2 : 1;
+  for (let t = Math.ceil(lo); t <= hi; t += step) svg += `<line x1="${x(t)}" x2="${x(t)}" y1="${top - 8}" y2="${H - 20}" stroke="var(--rule)" fill="none"/><text class="tick" x="${x(t)}" y="${H - 4}" text-anchor="middle">${t > 0 ? "+" : ""}${t}</text>`;
+  svg += `<line x1="${x(0)}" x2="${x(0)}" y1="${top - 8}" y2="${H - 20}" stroke="var(--muted)" fill="none"/>`;
+  M.forEach((m, i) => {
+    const y = top + i * rowH + rowH / 2, s = S[m];
+    svg += `<text x="0" y="${y + 4}">${m}. ${esc(DATA.labels[m])}</text>`;
+    svg += `<rect x="${Math.min(x(0), x(s.gap))}" y="${y - 10}" width="${Math.abs(x(s.gap) - x(0))}" height="20" fill="var(--${m.toLowerCase()})" opacity="${m === "A" ? 1 : .75}"/>`;
+    svg += `<line x1="${x(s.ci[0])}" x2="${x(s.ci[1])}" y1="${y}" y2="${y}" stroke="var(--ink)" stroke-width="1.5" fill="none"/>`;
+    svg += `<text class="tick" x="${x(Math.max(s.ci[1], 0)) + 6}" y="${y + 4}">${s.gap >= 0 ? "+" : ""}${s.gap.toFixed(2)}</text>`;
+  });
+  svg += `<text class="tick" x="${W - right}" y="${top - 12}" text-anchor="end">CSW points, thrown the pick vs not</text></svg>`;
+  $("season-chart").innerHTML = svg;
+  let rows = `<tr><th>Picker</th><th class="n">Pitches</th><th class="n">Pitcher threw it</th><th class="n">CSW when thrown</th><th class="n">Gap (95% CI)</th><th class="n">Agrees with A</th><th class="n">A's gap minus this (95% CI)</th></tr>`;
+  M.forEach(m => {
+    const s = S[m], d = S["A-" + m];
+    rows += `<tr><td><span class="key"><span class="sw" style="background:var(--${m.toLowerCase()})"></span>${m}. ${esc(DATA.labels[m])}</span></td><td class="n">${s.n.toLocaleString()}</td><td class="n">${pct(s.share)}</td><td class="n">${pct(s.csw, 1)}</td><td class="n">${s.gap >= 0 ? "+" : ""}${s.gap.toFixed(2)} (${s.ci[0].toFixed(2)} to ${s.ci[1].toFixed(2)})</td><td class="n">${d ? pct(d.agree) : "–"}</td><td class="n">${d ? `${d.diff >= 0 ? "+" : ""}${d.diff.toFixed(2)} (${d.ci[0].toFixed(2)} to ${d.ci[1].toFixed(2)})` : "–"}</td></tr>`;
+  });
+  $("season-tbl").innerHTML = rows;
+  const f = (d) => `${d.diff >= 0 ? "+" : ""}${d.diff.toFixed(2)} pts (95% CI ${d.ci[0].toFixed(2)} to ${d.ci[1].toFixed(2)})`;
+  const ab = S["A-B"], ac = S["A-C"], ad = S["A-D"], ae = S["A-E"];
+  $("season-callout").innerHTML = `<h3>${S.primary_pass ? "Our model beats the standard model" : "Our model ties the standard model"}</h3>
+    <p>The pre-registered test was whether the perceptual sequencer's picks beat the standard model's. ${S.primary_pass ? "They do" : "They don't, by a margin we can trust"}: ${f(ab)}. The two agree on ${pct(ab.agree)} of pitches, so the perceptual features rarely change the pick, even though they predict swings and whiffs better (log-loss table below). The Stuff-only pick is close too (${f(ac)}), because a pitcher's best-stuff pitch is often the right call.</p>
+    <p>All three model-based pickers clearly beat the simple rules. Against the pitcher's best pitch for the count, the perceptual pick gains ${f(ad)}; against his habit, ${f(ae)}. So a model of stuff, location and count is where most of the value is, and the perceptual layer adds a little that this test can't separate from zero.</p>`;
+  const L = DATA.season.logloss;
+  if (L) {
+    let t = `<tr><th>Model</th><th class="n">Swing</th><th class="n">Whiff</th><th class="n">CSW</th></tr>`;
+    for (const [k, v] of Object.entries(L)) t += `<tr><td>${esc(k)}</td><td class="n">${v.swing.toFixed(4)}</td><td class="n">${v.whiff.toFixed(4)}</td><td class="n">${v.CSW.toFixed(4)}</td></tr>`;
+    $("ll-tbl").innerHTML = t;
+  }
+}
+
+// ---- game summary ----
+$("game-lede").textContent = `On the ${DATA.n_scored} pitches with a pitch menu, the pitchers' actual CSW rate was ${pct(DATA.csw_actual, 1)}. The perceptual model expected ${DATA.a_csw_actual.toFixed(1)}% from the pitches they chose.`;
+let gr = `<tr><th>Picker</th><th class="n">Agreed with pitcher</th><th class="n">CSW when agreed</th><th class="n">CSW otherwise</th><th class="n">Expected CSW if followed (model A)</th></tr>`;
+M.forEach(m => {
+  const s = DATA.summary[m];
+  gr += `<tr><td><span class="key"><span class="sw" style="background:var(--${m.toLowerCase()})"></span>${m}. ${esc(DATA.labels[m])}</span></td><td class="n">${s.matched} of ${s.pitches} (${pct(s.matched / s.pitches)})</td><td class="n">${pct(s.csw_matched)}</td><td class="n">${pct(s.csw_other)}</td><td class="n">${s.a_csw_if_followed == null ? "–" : s.a_csw_if_followed.toFixed(1) + "%"}</td></tr>`;
+});
+$("game-tbl").innerHTML = gr;
+const ll = DATA.game_logloss;
+$("game-note").textContent = `The last column scores every picker with model A's own numbers, so it favors A by construction; read it as how much the choices differ, not as proof. A fairer single-game check is how well each model predicted the pitches actually thrown (CSW log-loss, lower is better): perceptual ${ll.A.toFixed(3)}, standard ${ll.B.toFixed(3)}, stuff-only ${ll.C.toFixed(3)}.`;
+
+// ---- legend and filters ----
+$("legend").innerHTML = M.map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.labels[m])}</span>`).join("");
+const pitchersInGame = [...new Set(DATA.pitches.map(p => p.pitcher))];
+let current = "all";
+function filters() {
+  const opts = [["all", "All pitchers"], ...pitchersInGame.map(id => [String(id), name(id)])];
+  $("filters").innerHTML = opts.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${v === current}">${esc(l)}</button>`).join("");
+  $("filters").querySelectorAll("button").forEach(b => b.onclick = () => { current = b.dataset.v; const missing = pitchersInGame.filter(id => !DATA.pitchers[String(id)]).map(name);
+if (missing.length) $("nomenu").textContent = `, so ${missing.join(" and ")} ${missing.length > 1 ? "have" : "has"} none`;
+filters(); render(); });
+}
+
+function result(p) {
+  if (p.event) return EV(p.event);
+  return DESC[p.desc] || EV(p.desc);
+}
+function paClass(ev) {
+  if (!ev) return "";
+  if (/strikeout|out|double_play|sac/.test(ev) && !/error/.test(ev)) return "good";
+  if (/single|double|triple|home_run|walk|hit_by_pitch|error/.test(ev)) return "bad";
+  return "";
+}
+function bars(p) {
+  if (!p.cands) return `<span class="note">No menu</span>`;
+  const a = p.cands.A, types = Object.keys(a).sort((x, y) => a[y][2] - a[x][2]);
+  return `<div class="cands">` + types.map(t => {
+    const v = a[t][2], th = t === p.type;
+    return `<span class="chip${th ? " hit" : ""}" title="${TYPES[t] || t}: predicted CSW ${v}%">${t} ${v.toFixed(0)}</span>`;
+  }).join("") + `</div>`;
+}
+function render() {
+  const ps = DATA.pitches.filter(p => current === "all" || String(p.pitcher) === current);
+  const halves = new Map();
+  ps.forEach(p => {
+    const k = `${p.half === "Top" ? "Top" : "Bottom"} ${p.inning}`;
+    if (!halves.has(k)) halves.set(k, new Map());
+    const pas = halves.get(k);
+    if (!pas.has(p.ab)) pas.set(p.ab, []);
+    pas.get(p.ab).push(p);
+  });
+  let html = "";
+  for (const [k, pas] of halves) {
+    const all = [...pas.values()].flat(), sc = all.filter(p => p.picks);
+    const agree = sc.filter(p => p.picks.A === p.type).length;
+    const tag = sc.length ? `perceptual pick thrown ${agree} of ${sc.length}` : "no pitch menu for this pitcher";
+    html += `<div class="half"><h3>${k}<span>${all.length} pitches · ${tag}</span></h3>`;
+    for (const [ab, list] of pas) {
+      const last = list[list.length - 1], f = list[0];
+      const ev = last.event;
+      html += `<details class="pa"><summary><span class="who">${esc(name(f.batter))}</span><span class="note">${f.stand}HB vs ${esc(name(f.pitcher))} · ${f.outs} out</span><span class="res ${paClass(ev)}">${ev ? EV(ev) : "(PA continues)"}</span></summary><div class="pitches"><table><tr><th>#</th><th>Count</th><th>Thrown</th><th>Result</th><th>Picks</th><th>Model A predicted CSW by pitch</th></tr>`;
+      list.forEach(p => {
+        const out = p.csw ? "csw" : (p.xwoba != null && p.xwoba > .35 ? "dmg" : "");
+        const extra = p.ev != null ? ` · ${p.ev} mph EV${p.xwoba != null ? `, xwOBA ${p.xwoba.toFixed(3)}` : ""}` : "";
+        const picks = p.picks ? M.map(m => `<span class="chip${p.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.labels[m])}">${m} ${p.picks[m] || "–"}</span>`).join(" ") : `<span class="note">–</span>`;
+        html += `<tr><td class="n">${p.n}</td><td class="mono">${p.count}</td><td><span class="thrown">${p.type}</span> <span class="note">${p.mph ?? ""}</span></td><td><span class="outc ${out}">${esc(result(p))}</span><span class="note">${extra}</span></td><td>${picks}</td><td>${bars(p)}</td></tr>`;
+      });
+      html += `</table></div></details>`;
+    }
+    html += `</div>`;
+  }
+  $("halves").innerHTML = html;
+}
+const missing = pitchersInGame.filter(id => !DATA.pitchers[String(id)]).map(name);
+if (missing.length) $("nomenu").textContent = `, so ${missing.join(" and ")} ${missing.length > 1 ? "have" : "has"} none`;
+filters(); render();
+</script>

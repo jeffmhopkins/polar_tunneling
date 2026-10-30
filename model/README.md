@@ -262,3 +262,24 @@ in play. Trained on 2025 with the batter-specific features, tested once on
 `damage_sequencer.py --production` writes the page data (`sequencing.json`,
 `batter_adj/`) with runs saved per 100 next to CSW, plus team tags for the
 pre-game plan.
+
+## Model comparison and game report (pre-registered, `PREREG_game.md`)
+
+`game_report.py` compares five pitch pickers, all built from 2025 only, and
+writes `game_report.md` plus `report_generation/game_<pk>.json` for one
+game's page (`report_generation/build_game_report.py`). Default game:
+Orioles 10 at Yankees 2, 2026-09-25.
+
+- **Primary: did not pass.** The perceptual sequencer's picks gain +4.49 CSW
+  pts over unmatched pitches, the standard model's (no perceptual features)
+  +4.33. The difference is +0.16 (95% CI -0.06 to +0.38). The two agree on
+  82% of pitches.
+- Stuff-only (Stuff+-style) picks: +4.03; A minus C +0.46 (CI -0.12 to +1.04).
+- Both clearly beat simple rules: best pitch for the count +2.67 (A minus D
+  +1.85, CI +1.26 to +2.41) and the pitcher's habit +0.52 (A minus E +3.97).
+- As forecasts of the pitch thrown, the perceptual model still has the best
+  2026 log-loss (CSW 0.4727 vs 0.4748 standard, 0.5913 stuff-only).
+
+Reading: most of the sequencer's value comes from modelling stuff, location
+and count. The perceptual features improve predictions but rarely change
+which pitch is best.

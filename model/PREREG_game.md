@@ -48,3 +48,9 @@ predicted CSW for each candidate, the pitch actually thrown, and the result.
 Game pitchers get the same grids with lower minimums (>= 300 regular-season
 pitches, >= 60 to a side, >= 15 of a type). One game is far too small to rank
 models; the season comparison is the evidence.
+
+Amendment (before any run): Jeff asked for an Orioles game, so the default
+game is now 823491, Orioles at Yankees on 2026-09-25 (their latest game in
+the data). It is a regular-season game, so its own pitches are left out of
+the 2026 shapes and usage used to build the grids. The model still never saw
+any 2026 outcome.
