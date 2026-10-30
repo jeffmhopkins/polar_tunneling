@@ -72,3 +72,29 @@ Conclusion: no tunneling variant tested here (sequence pairs, arsenal vs
 fastball, within or across seasons) adds enough to justify an outcome-based
 Tunnel+. The arsenal angle gaps are stable descriptors of arsenal shape, so
 they are still useful as a description in the explorer.
+
+## Perceptual model (pre-registered, `PREREG.md`)
+
+`perceptual.py` trains on 2025 and scores 2026 once. The pre-registration was
+committed before any outcome was computed, and the result is in
+`perceptual_report.md`.
+
+- **Primary: pass.** Over the controls (stuff, location, count, previous
+  pitch, fastball differentials, arm angle, batter rates), the perceptual
+  features improve 2026 log-loss by:
+  - 1.83 per 1000 for whiff | swing (nulls -0.07 to 0.08)
+  - 5.86 per 1000 for swing (nulls -0.47 to -0.07)
+
+  The largest blocks are optical motion (mainly for swing decisions), at-bat
+  build-up and fastball-prior miss.
+- **Secondary: fail.** A pitcher x pitch type's mean perceptual value is stable
+  (split-half 0.94) but does not predict his residual whiffs in the other half
+  of games (r = -0.02).
+
+Reading: the gain comes from pitch-to-pitch variation within a pitcher. The
+null keeps each pitcher x type's feature distribution and still scores about
+0, so the signal is in which pitch, when and after what. That makes it useful
+for pitch-level and sequencing models. It does not support ranking pitchers
+by a stable Tunnel+ skill. Part of the optical-motion gain may be ball speed
+and trajectory information that the plate-based controls don't fully capture.
+That is an untested caveat.
