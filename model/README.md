@@ -283,3 +283,26 @@ Orioles 10 at Yankees 2, 2026-09-25.
 Reading: most of the sequencer's value comes from modelling stuff, location
 and count. The perceptual features improve predictions but rarely change
 which pitch is best.
+
+## Model comparison by runs, and public models (pre-registered, `PREREG_runs.md`)
+
+`runs_compare.py` writes `runs_report.md` and the runs picks for the game
+page. Pickers built from 2025 only: perceptual, standard and Stuff-only
+models choosing by expected runs (RA, RB, RC), the perceptual CSW pick, the
+two rules, and FanGraphs' published 2025 Stuff+, Pitching+ and PitchingBot
+grades (best-graded type in his menu; `datamining/pull_fangraphs_grades.py`).
+
+- **Primary: did not pass.** By runs, the perceptual pick (-0.60 runs per
+  100 pitches vs not) and the standard model's pick (-0.58) are the same:
+  RA minus RB -0.03 (95% CI -0.12 to +0.06). They agree on 78%.
+- Against the public grades, our runs pick allows fewer runs than
+  Pitching+ (-0.21, CI -0.38 to -0.04) and PitchingBot (-0.29, CI -0.43 to
+  -0.12), and about the same as Stuff+ (-0.19, CI -0.35 to +0.00). Our CSW
+  pick gets more CSW than all three (+1.3 to +2.9 pts, CIs above 0).
+- The pitcher's habit is close on runs (RA minus habit -0.08, CI -0.23 to
+  +0.07) while adding few strikes.
+
+Reading: modelling the count and the pitch's real shape and location is what
+beats the public grades, which ignore both. The perceptual features still
+don't change the pick enough to matter, whether pitches are chosen by
+strikes or by runs.

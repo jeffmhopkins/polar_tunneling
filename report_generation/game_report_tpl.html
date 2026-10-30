@@ -7,7 +7,7 @@
 :root {
   --paper: #f6f7f4; --card: #ffffff; --ink: #1b2126; --muted: #5f6b70; --rule: #d9ded9;
   --accent: #df4601; --accent-soft: #fbe3d6; --good: #1f7a4d; --good-soft: #dcefe4; --bad: #a3312a; --bad-soft: #f6dedb;
-  --a: #df4601; --b: #2b6cb0; --c: #6b5aa6; --d: #3d7d74; --e: #8a8a7a;
+  --a: #df4601; --b: #2b6cb0; --c: #6b5aa6; --d: #3d7d74; --e: #8a8a7a; --f: #a87a10;
   --display: "Barlow Condensed", "Arial Narrow", sans-serif;
   --body: "IBM Plex Sans", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -15,11 +15,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
   --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
-  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; color-scheme: dark } }
+  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; --f: #e3b341; color-scheme: dark } }
 :root[data-theme="dark"] {
   --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
   --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
-  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; color-scheme: dark }
+  --a: #ff7a3d; --b: #6ea8e6; --c: #a998e0; --d: #6fbfb2; --e: #a5a596; --f: #e3b341; color-scheme: dark }
 body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--body); }
 .wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.05; }
@@ -95,6 +95,14 @@ tr:last-child td { border-bottom: 0; }
     <h3>Predicting what actually happened on every 2026 pitch</h3>
     <p class="lede">Log-loss on all 2026 regular-season pitches as thrown (lower is better). This is a different question from picking: how well each model forecasts the result of the pitch the pitcher chose.</p>
     <div class="tbl"><table id="ll-tbl"></table></div>
+  </section>
+
+  <section id="runs-sec">
+    <h2>Picking by runs instead of strikes</h2>
+    <p class="lede" id="runs-lede"></p>
+    <div class="chart" id="runs-chart"></div>
+    <div class="tbl"><table id="runs-tbl"></table></div>
+    <div class="callout" id="runs-callout"></div>
   </section>
 
   <section>
@@ -178,6 +186,43 @@ if (!S) { $("season-sec").hidden = true; } else {
   }
 }
 
+// ---- runs ----
+const R = DATA.runs && DATA.runs.season;
+const RM = ["RA", "RB", "RC", "A", "D", "E", "FS", "FP", "FB"].filter(m => DATA.runs && DATA.runs.season && DATA.runs.season[m]);
+const RCOL = { RA: "a", RB: "b", RC: "c", A: "a", D: "d", E: "e", FS: "f", FP: "f", FB: "f" };
+if (!R) { $("runs-sec").hidden = true; } else {
+  const RL = DATA.runs.labels;
+  $("runs-lede").textContent = `The same test, scored in runs. Over ${R.n.toLocaleString()} 2026 pitches: runs allowed per 100 pitches when the pitcher threw each picker's choice, minus the same count when he didn't, valuing balls in play by their xwOBA. Lower is better. RA, RB and RC are the perceptual, standard and Stuff-only models choosing the pitch with the fewest expected runs.`;
+  const W = 760, rowH = 46, top = 28, left = 220, right = 64, H = top + rowH * RM.length + 24;
+  const lo = Math.min(0, ...RM.map(m => R[m].ci[0])), hi = Math.max(0, ...RM.map(m => R[m].ci[1]));
+  const x = v => left + (v - lo) / (hi - lo) * (W - left - right);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Runs per 100 pitches by picker">`;
+  const step = (hi - lo) > 3 ? 1 : (hi - lo) > 1.2 ? 0.5 : 0.25;
+  for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) svg += `<line x1="${x(t)}" x2="${x(t)}" y1="${top - 8}" y2="${H - 20}" stroke="var(--rule)" fill="none"/><text class="tick" x="${x(t)}" y="${H - 4}" text-anchor="middle">${t > 0 ? "+" : ""}${+t.toFixed(2)}</text>`;
+  svg += `<line x1="${x(0)}" x2="${x(0)}" y1="${top - 8}" y2="${H - 20}" stroke="var(--muted)" fill="none"/>`;
+  RM.forEach((m, i) => {
+    const y = top + i * rowH + rowH / 2, s = R[m];
+    svg += `<text x="0" y="${y + 4}">${m}. ${esc(RL[m])}</text>`;
+    svg += `<rect x="${Math.min(x(0), x(s.runs))}" y="${y - 10}" width="${Math.abs(x(s.runs) - x(0))}" height="20" fill="var(--${RCOL[m]})" opacity="${m === "RA" ? 1 : m.startsWith("R") || m.startsWith("F") ? .8 : .45}"/>`;
+    svg += `<line x1="${x(s.ci[0])}" x2="${x(s.ci[1])}" y1="${y}" y2="${y}" stroke="var(--ink)" stroke-width="1.5" fill="none"/>`;
+    svg += `<text class="tick" x="${x(Math.max(s.ci[1], 0)) + 6}" y="${y + 4}">${s.runs >= 0 ? "+" : ""}${s.runs.toFixed(2)}</text>`;
+  });
+  svg += `<text class="tick" x="${W - right}" y="${top - 12}" text-anchor="end">runs per 100 pitches, thrown the pick vs not</text></svg>`;
+  $("runs-chart").innerHTML = svg;
+  const sg = v => `${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
+  let rows = `<tr><th>Picker</th><th class="n">Pitcher threw it</th><th class="n">Runs per 100 (95% CI)</th><th class="n">CSW pts</th><th class="n">Agrees with RA</th><th class="n">RA minus this, runs (95% CI)</th></tr>`;
+  RM.forEach(m => {
+    const s = R[m], d = R["RA-" + m];
+    rows += `<tr><td><span class="key"><span class="sw" style="background:var(--${RCOL[m]})"></span>${m}. ${esc(RL[m])}</span></td><td class="n">${pct(s.share)}</td><td class="n">${sg(s.runs)} (${s.ci[0].toFixed(2)} to ${s.ci[1].toFixed(2)})</td><td class="n">${sg(s.csw)}</td><td class="n">${d ? pct(d.agree) : "–"}</td><td class="n">${d ? `${sg(d.diff)} (${d.ci[0].toFixed(2)} to ${d.ci[1].toFixed(2)})` : "–"}</td></tr>`;
+  });
+  $("runs-tbl").innerHTML = rows;
+  const fc = v => `${sg(v.diff)} CSW pts (95% CI ${v.ci[0].toFixed(2)} to ${v.ci[1].toFixed(2)})`;
+  const d = R["RA-RB"], f = v => `${sg(v.diff)} runs per 100 pitches (95% CI ${v.ci[0].toFixed(2)} to ${v.ci[1].toFixed(2)})`;
+  $("runs-callout").innerHTML = `<h3>${R.primary_pass ? "By runs, the perceptual features help" : "By runs, the perceptual features still don't separate"}</h3>
+    <p>The pre-registered test: does the perceptual model pick pitches that allow fewer runs than the standard model's picks? RA minus RB is ${f(d)}; ${R.primary_pass ? "that is below zero with an interval that excludes it" : "the interval includes zero"}. The two agree on ${pct(d.agree)} of pitches. Against the Stuff-only runs pick: ${f(R["RA-RC"])}. Against the CSW pick from the same perceptual model: ${f(R["RA-A"])}. One surprise: the pitcher's own habit does about as well on runs (${f(R["RA-E"])}), because his usual pitch in a count is rarely a damaging one, even though it earns few extra strikes.</p>
+    ${R["RA-FS"] ? `<p>The public models (FanGraphs' 2025 Stuff+, Pitching+ and PitchingBot grades) pick his best-graded pitch in every count. Our runs pick against them: Stuff+ ${f(R["RA-FS"])}, Pitching+ ${f(R["RA-FP"])}, PitchingBot ${f(R["RA-FB"])}. On strikes, our CSW pick against them: Stuff+ ${fc(R["A-FS"])}, Pitching+ ${fc(R["A-FP"])}, PitchingBot ${fc(R["A-FB"])}.</p>` : ""}`;
+}
+
 // ---- game summary ----
 $("game-lede").textContent = `On the ${DATA.n_scored} pitches with a pitch menu, the pitchers' actual CSW rate was ${pct(DATA.csw_actual, 1)}. The perceptual model expected ${DATA.a_csw_actual.toFixed(1)}% from the pitches they chose.`;
 let gr = `<tr><th>Picker</th><th class="n">Agreed with pitcher</th><th class="n">CSW when agreed</th><th class="n">CSW otherwise</th><th class="n">Expected CSW if followed (model A)</th></tr>`;
@@ -190,15 +235,14 @@ const ll = DATA.game_logloss;
 $("game-note").textContent = `The last column scores every picker with model A's own numbers, so it favors A by construction; read it as how much the choices differ, not as proof. A fairer single-game check is how well each model predicted the pitches actually thrown (CSW log-loss, lower is better): perceptual ${ll.A.toFixed(3)}, standard ${ll.B.toFixed(3)}, stuff-only ${ll.C.toFixed(3)}.`;
 
 // ---- legend and filters ----
-$("legend").innerHTML = M.map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.labels[m])}</span>`).join("");
+$("legend").innerHTML = M.map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.labels[m])}</span>`).join("")
+  + (DATA.runs ? ["RA", "RB", "RC", "FS", "FP", "FB"].filter(m => DATA.runs.labels[m]).map(m => `<span class="key"><span class="chip">${m}</span>${esc(DATA.runs.labels[m])}</span>`).join("") : "");
 const pitchersInGame = [...new Set(DATA.pitches.map(p => p.pitcher))];
 let current = "all";
 function filters() {
   const opts = [["all", "All pitchers"], ...pitchersInGame.map(id => [String(id), name(id)])];
   $("filters").innerHTML = opts.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${v === current}">${esc(l)}</button>`).join("");
-  $("filters").querySelectorAll("button").forEach(b => b.onclick = () => { current = b.dataset.v; const missing = pitchersInGame.filter(id => !DATA.pitchers[String(id)]).map(name);
-if (missing.length) $("nomenu").textContent = `, so ${missing.join(" and ")} ${missing.length > 1 ? "have" : "has"} none`;
-filters(); render(); });
+  $("filters").querySelectorAll("button").forEach(b => b.onclick = () => { current = b.dataset.v; filters(); render(); });
 }
 
 function result(p) {
@@ -219,6 +263,10 @@ function bars(p) {
     return `<span class="chip${th ? " hit" : ""}" title="${TYPES[t] || t}: predicted CSW ${v}%">${t} ${v.toFixed(0)}</span>`;
   }).join("") + `</div>`;
 }
+function runsChips(rp, p) {
+  const t = Object.keys(rp.rs).sort((a, b) => rp.rs[b] - rp.rs[a]);
+  return `<div class="cands" style="margin-top:4px">` + t.map(k => `<span class="chip${k === p.type ? " hit" : ""}" title="${TYPES[k] || k}: runs saved per 100 pitches">${k} ${rp.rs[k] >= 0 ? "+" : ""}${rp.rs[k].toFixed(1)}</span>`).join("") + `</div>`;
+}
 function render() {
   const ps = DATA.pitches.filter(p => current === "all" || String(p.pitcher) === current);
   const halves = new Map();
@@ -238,12 +286,14 @@ function render() {
     for (const [ab, list] of pas) {
       const last = list[list.length - 1], f = list[0];
       const ev = last.event;
-      html += `<details class="pa"><summary><span class="who">${esc(name(f.batter))}</span><span class="note">${f.stand}HB vs ${esc(name(f.pitcher))} · ${f.outs} out</span><span class="res ${paClass(ev)}">${ev ? EV(ev) : "(PA continues)"}</span></summary><div class="pitches"><table><tr><th>#</th><th>Count</th><th>Thrown</th><th>Result</th><th>Picks</th><th>Model A predicted CSW by pitch</th></tr>`;
+      html += `<details class="pa"><summary><span class="who">${esc(name(f.batter))}</span><span class="note">${f.stand}HB vs ${esc(name(f.pitcher))} · ${f.outs} out</span><span class="res ${paClass(ev)}">${ev ? EV(ev) : "(PA continues)"}</span></summary><div class="pitches"><table><tr><th>#</th><th>Count</th><th>Thrown</th><th>Result</th><th>Picks</th><th>Model A: CSW % by pitch, then runs saved per 100</th></tr>`;
       list.forEach(p => {
         const out = p.csw ? "csw" : (p.xwoba != null && p.xwoba > .35 ? "dmg" : "");
         const extra = p.ev != null ? ` · ${p.ev} mph EV${p.xwoba != null ? `, xwOBA ${p.xwoba.toFixed(3)}` : ""}` : "";
-        const picks = p.picks ? M.map(m => `<span class="chip${p.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.labels[m])}">${m} ${p.picks[m] || "–"}</span>`).join(" ") : `<span class="note">–</span>`;
-        html += `<tr><td class="n">${p.n}</td><td class="mono">${p.count}</td><td><span class="thrown">${p.type}</span> <span class="note">${p.mph ?? ""}</span></td><td><span class="outc ${out}">${esc(result(p))}</span><span class="note">${extra}</span></td><td>${picks}</td><td>${bars(p)}</td></tr>`;
+        const rp = DATA.runs && DATA.runs.pitches[`${p.ab}-${p.n}`];
+        const rpicks = rp ? " " + ["RA", "RB", "RC", "FS", "FP", "FB"].filter(m => rp.picks[m]).map(m => `<span class="chip${rp.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.runs.labels[m])}">${m} ${rp.picks[m]}</span>`).join(" ") : "";
+        const picks = p.picks ? M.map(m => `<span class="chip${p.picks[m] === p.type ? " hit" : ""}" title="${esc(DATA.labels[m])}">${m} ${p.picks[m] || "–"}</span>`).join(" ") + rpicks : `<span class="note">–</span>`;
+        html += `<tr><td class="n">${p.n}</td><td class="mono">${p.count}</td><td><span class="thrown">${p.type}</span> <span class="note">${p.mph ?? ""}</span></td><td><span class="outc ${out}">${esc(result(p))}</span><span class="note">${extra}</span></td><td>${picks}</td><td>${bars(p)}${rp ? runsChips(rp, p) : ""}</td></tr>`;
       });
       html += `</table></div></details>`;
     }
