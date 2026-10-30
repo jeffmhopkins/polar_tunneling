@@ -122,3 +122,24 @@ moment the hitter must decide. The plate-based controls miss this. It is not
 speed. Expressing it as eye-frame angular motion adds little over raw
 kinematics, but the expectation, ambiguity, fastball-prior miss and at-bat
 build-up features add something beyond it (exploratory, not pre-registered).
+
+## Sequencer validation (pre-registered, `PREREG_validation.md`)
+
+`validate_sequencer.py` scores real 2026 pitches against a sequencer built
+from a 2025-only model (`sequencing.py --train-years 2025`). It writes
+`validation_report.md`. All three tests pass:
+
+1. **Top pick vs not.** Pitches that matched the top pick had a CSW 4.5 pts
+   higher than other pitches in the same count (95% CI +4.0 to +5.0). The gap
+   is positive in every count.
+2. **Beats a naive pick.** The naive pick is the pitcher's best 2025 CSW type
+   in that count. The sequencer's gap beats the naive pick's by 1.8 pts
+   (CI +1.2 to +2.4).
+3. **After what.** With the same pitcher, pitch type, side and count, the pitch
+   did 2.6 pts better on CSW after a previous pitch the tool favors (CI +2.0 to
+   +3.1). The model predicted 1.4 pts.
+
+Caveat: this is observational. Pitchers choose pitches with knowledge of the
+batter and the situation, which these comparisons don't control. The
+after-what gap being larger than predicted suggests some of that selection is
+included.
