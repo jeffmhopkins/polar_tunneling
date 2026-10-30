@@ -1,7 +1,42 @@
+<div align="center">
+
 # model/
 
-Go/no-go checks for the sequence tunnel score: each pitch is compared with the
-previous pitch in the same plate appearance (see the tunnel score proposal).
+Every tunneling test, in the order it was run: the features, the pre-registration, the script and its report.
+
+[![Train: 2025](https://img.shields.io/badge/train-2025-blue)](../datamining/outputs) [![Test: 2026, once](https://img.shields.io/badge/test-2026%2C%20once-blue)](../datamining/outputs) [![Model: LightGBM](https://img.shields.io/badge/model-LightGBM-blue)](requirements.txt)
+
+</div>
+
+> [!IMPORTANT]
+> **How each test runs.** The question, data, controls and pass/fail bar go in a `PREREG_*.md` file, which
+> is committed before any outcome is computed. The script then trains on 2025, scores 2026 once and writes
+> its `*_report.md`. Every result is kept, including the failures. Anything not in the pre-registration is
+> labelled exploratory.
+
+| Study | Pre-registration | Script | Report | Verdict |
+|---|---|---|---|---|
+| [Sequence tunnel score](#sequence-tunnel-score) | none (go/no-go) | `feasibility.py`, `robustness.py` | [feasibility](feasibility_report.md), [robustness](robustness_report.md) | Fail |
+| [Arsenal vs fastball](#arsenal-check-2025-vs-primary-fastball) | none | `arsenal.py`, `arsenal_holdout.py` | [2025](arsenal_report.md), [2026](arsenal_report_2026.md), [holdout](arsenal_holdout_report.md) | Fail |
+| [Perceptual model](#perceptual-model-pre-registered-preregmd) | [PREREG.md](PREREG.md) | `perceptual.py` | [report](perceptual_report.md) | Pass (pitch level) |
+| [Speed check](#speed-check-pre-registered-prereg_speedmd) | [PREREG_speed.md](PREREG_speed.md) | `speed_check.py` | [report](speed_check_report.md) | Pass |
+| [Sequencer validation](#sequencer-validation-pre-registered-prereg_validationmd) | [PREREG_validation.md](PREREG_validation.md) | `validate_sequencer.py` | [report](validation_report.md) | Pass |
+| [Tool vs pitcher choice](#tool-vs-pitcher-choice-pre-registered-prereg_choicemd) | [PREREG_choice.md](PREREG_choice.md) | `validate_choice.py` | [report](choice_report.md) | +3.6 pts survives |
+| [Per-hitter timing](#per-hitter-timing-pre-registered-prereg_hittermd-part-1) | [PREREG_hitter.md](PREREG_hitter.md) | `hitter_timing.py` | [report](hitter_timing_report.md) | Fail |
+| [Batter-specific sequencer](#batter-specific-sequencer-pre-registered-prereg_hittermd-part-2) | [PREREG_hitter.md](PREREG_hitter.md) | `hitter_sequencer.py` | [report](hitter_sequencer_report.md) | Pass |
+| [Whole at-bat](#whole-at-bat-test-pre-registered-prereg_atbatmd) | [PREREG_atbat.md](PREREG_atbat.md) | `validate_atbat.py` | [report](atbat_report.md) | Pass (K, runs); fail (contact) |
+| [Run-value sequencer](#contact-quality-run-value-sequencer-pre-registered-prereg_damagemd) | [PREREG_damage.md](PREREG_damage.md) | `damage_sequencer.py` | [report](damage_report.md) | Pass |
+| [Model comparison, game report](#model-comparison-and-game-report-pre-registered-prereg_gamemd) | [PREREG_game.md](PREREG_game.md) | `game_report.py` | [report](game_report.md) | Fail (perceptual vs standard) |
+| [Comparison by runs, public models](#model-comparison-by-runs-and-public-models-pre-registered-prereg_runsmd) | [PREREG_runs.md](PREREG_runs.md) | `runs_compare.py` | [report](runs_report.md) | Fail (perceptual vs standard); beats Pitching+, PitchingBot |
+| [Location](#location-in-the-sequencer-pre-registered-prereg_locationmd) | [PREREG_location.md](PREREG_location.md) | `location_compare.py` | [report](location_report.md) | Fail |
+
+`pregame_report.py` builds the pre-game plan from the standard run-value model, and `sequencing.py`
+builds the original CSW sequencer data (`sequencing.json`; `sequencing_2025model.json` is the 2025-only
+version the validations use).
+
+## Sequence tunnel score
+
+The first go/no-go checks. Each pitch is compared with the previous pitch in the same plate appearance.
 
 - `features.py` rebuilds each pitch from Statcast's 9-parameter fit, views it
   from the batter's eye, and computes the separations against the previous pitch:
@@ -11,7 +46,7 @@ previous pitch in the same plate appearance (see the tunnel score proposal).
 - `robustness.py` repeats the lift test at 125/175/225 ms, on different-type
   pairs only, with more null draws, and writes `robustness_report.md`.
 
-## Findings (2025)
+### Findings (2025)
 
 1. **Free variation is limited.** Pitch types plus the two plate locations
    predict 71% of the variance in commit-point separation (held-out R²). Most of
@@ -33,7 +68,8 @@ previous pitch in the same plate appearance (see the tunnel score proposal).
    is a function of his arsenal. But it does not predict his residual whiffs in
    the other half of games (r = 0.015).
 
-The sequence tunnel score fails the go/no-go as designed.
+> [!WARNING]
+> The sequence tunnel score fails the go/no-go as designed.
 
 ## Arsenal check (2025, vs primary fastball)
 
