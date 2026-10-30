@@ -167,3 +167,44 @@ the batter and the situation. What remains is an upper bound: catcher,
 scouting reports and game plans are not measured. Part of it is also that
 the top pick tends to be the pitcher's best-CSW type, which the naive pick
 captures (validation test 2: the tool beats that by 1.8 pts).
+
+## Per-hitter timing (pre-registered, `PREREG_hitter.md` Part 1)
+
+`hitter_timing.py` writes `hitter_timing_report.md` and
+`batter_tau_2025.csv`. Each hitter's commit point was fitted on 2025 from how
+well the model predicted his swings and whiffs at 125-225 ms before arrival.
+
+- **Did not pass.** Using the fitted timing made 2026 predictions worse than
+  the current bat-tracking timing (whiff per swing -0.64, swing -0.87 x1000),
+  about as bad as giving hitters someone else's fitted timing.
+- The fitted timing doesn't repeat: odd vs even 2025 games correlate at
+  r = 0.04. The spread between hitters is mostly noise.
+- League-wide, 150 ms fit 2025 slightly better than 175 ms, but that did not
+  carry over to 2026 in a useful way (whiff +0.28, swing -0.34).
+
+So the sequencer keeps the bat-tracking timing.
+
+## Batter-specific sequencer (pre-registered, `PREREG_hitter.md` Part 2)
+
+`hitter_sequencer.py` writes `hitter_sequencer_report.md`. The model adds
+each hitter's whiff, swing and chase rates against fastballs, breaking balls
+and offspeed. The page's score is the average-hitter grid plus a per-hitter
+adjustment by count and pitch type. Trained on 2025, tested once on 2026
+(hitters with >= 200 pitches seen in 2025, rates from 2025 only):
+
+- The hitter-specific pick differs from the average-hitter pick on 17.6% of
+  pitches.
+- **Primary: passes.** Where they differ, throwing the hitter-specific pick
+  got **+2.90 CSW pts** more than throwing the average-hitter pick (95% CI
+  +2.06 to +3.77, 37,667 pitches).
+- Over all pitches, the matched gap rises from +4.02 to +4.71 pts (+0.69,
+  CI +0.48 to +0.90).
+- The class features improve 2026 log-loss (swing +0.98, whiff +0.58,
+  CSW +0.78 x1000).
+
+Pitchers scout hitters too, so this is an upper bound on what the tool adds
+beyond that.
+
+`hitter_sequencer.py --production` retrains on both seasons and writes
+`sequencing.json` and `batter_adj/` (hitters with >= 2,500 pitches seen),
+which `report_generation/build_sequencer.py` turns into the page.

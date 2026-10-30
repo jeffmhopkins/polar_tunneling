@@ -88,7 +88,7 @@ tr.top .rank{color:var(--accent)}
   <header>
     <div>
       <h1>Pitch Sequencer</h1>
-      <p class="sub">What to throw next, given the count and the last pitch. Predictions come from the perceptual tunnel model, which was trained on 2025 and validated on 2026, and is shown here retrained on both seasons. Each option is the pitcher's real 2026 pitches of that type to that side of the plate, against an average hitter.</p>
+      <p class="sub">What to throw next, given the count, the last pitch and who is at the plate. Predictions come from the perceptual tunnel model, which was trained on 2025 and validated on 2026, and is shown here retrained on both seasons. Each option is the pitcher's real 2026 pitches of that type to that side of the plate, against an average hitter or the hitter you pick.</p>
     </div>
     <div class="meta mono" id="coverage"></div>
   </header>
@@ -103,6 +103,10 @@ tr.top .rank{color:var(--accent)}
     <div class="ctl">
       <span class="lbl" id="sideLbl">Batter</span>
       <div class="seg" id="side" role="group" aria-labelledby="sideLbl"></div>
+      <label class="lbl" for="hq" style="margin-top:4px">Hitter</label>
+      <input id="hq" type="search" list="hlist" placeholder="Average hitter" autocomplete="off">
+      <datalist id="hlist"></datalist>
+      <div class="meta" id="hmeta"></div>
     </div>
     <div class="ctl">
       <span class="lbl" id="countLbl">Count (balls × strikes) · top pick shown</span>
@@ -129,11 +133,12 @@ tr.top .rank{color:var(--accent)}
             <th class="sortable" data-k="1" scope="col">Whiff%</th>
             <th class="sortable" data-k="0" scope="col">Swing%</th>
             <th class="sortable" data-k="3" scope="col" title="CSW points from how this pitch looks to the hitter, vs the same pitch with a league-typical look">Deception</th>
+            <th class="sortable" data-k="4" scope="col" title="CSW points this hitter adds or takes away vs an average hitter">Hitter</th>
           </tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="meta">CSW% is called strikes plus whiffs per pitch. Whiff% is per pitch, not per swing. Deception is how many CSW points come from how this pitch looks to the hitter. That covers how far it misses where a fastball would have gone, how it moves across his view at the decision point, and how hard it is to tell from the pitcher's other pitches. It's measured against the same pitch type with a league-typical look, in the same count and sequence.</p>
+      <p class="meta">CSW% is called strikes plus whiffs per pitch. Whiff% is per pitch, not per swing. Deception is how many CSW points come from how this pitch looks to the hitter. That covers how far it misses where a fastball would have gone, how it moves across his view at the decision point, and how hard it is to tell from the pitcher's other pitches. It's measured against the same pitch type with a league-typical look, in the same count and sequence. Hitter is how many CSW points the chosen hitter adds to or takes away from that pitch compared with an average hitter, and it is already included in CSW%.</p>
     </section>
 
     <section class="pane">
@@ -150,8 +155,9 @@ tr.top .rank{color:var(--accent)}
   <section class="notes">
     <b>How to read this</b>
     <span>The model found a real pitch-to-pitch effect. In a single pre-registered 2025 → 2026 test, the perceptual features improved whiff and swing predictions beyond stuff, location, count, the previous pitch and speed. A pitcher's average on these features did <b>not</b> predict his results in held-out games. So use this to choose pitches in a situation, not to rank pitchers.</span>
-    <span>The previous pitch is the pitcher's average pitch of that type, at its average location. The previous result is the most common one leading into the count. The hitter is league-average and seeing the pitcher for the first time. Differences of a point or less between options are within noise.</span>
-    <span>Pitchers with at least 1,000 regular-season pitches in 2026 are included. Each pitch type must be at least 4% of his mix to that side, with at least 40 pitches. Code: polar_tunneling/model/sequencing.py.</span>
+    <span><b>Picking a hitter</b> adjusts CSW% for his whiff, swing and chase rates against fastballs, breaking balls and offspeed pitches, and for his swing timing. In a pre-registered 2025 → 2026 test, when the hitter-specific pick differed from the average-hitter pick, the hitter-specific pick got <b>2.9 more CSW points</b> (95% CI 2.1 to 3.8). The two picks differ about 18% of the time. Fitting each hitter's own decision point did not hold up, so timing comes from bat tracking.</span>
+    <span>The previous pitch is the pitcher's average pitch of that type, at its average location. The previous result is the most common one leading into the count. Without a hitter picked, the hitter is league-average. Either way he is seeing the pitcher for the first time. Differences of a point or less between options are within noise.</span>
+    <span>Pitchers with at least 1,000 regular-season pitches in 2026 are included. Each pitch type must be at least 4% of his mix to that side, with at least 40 pitches. Hitters with at least 2,500 pitches seen across 2025 and 2026 can be picked. Code: polar_tunneling/model/hitter_sequencer.py.</span>
   </section>
 </div>
 
@@ -167,8 +173,17 @@ const label=id=>{const p=DATA.pitchers[id];return `${p.name} (${p.throws}HP)`};
 $("plist").innerHTML=ids.map(id=>{byLabel[label(id)]=id;return `<option value="${label(id)}"></option>`}).join("");
 $("coverage").textContent=`${ids.length} pitchers · 2026`;
 
-let S={pid:null,side:"R",count:"1-1",prev:null,sortK:2};
-try{const s=JSON.parse(localStorage.getItem("seqState")||"null");if(s&&DATA.pitchers[s.pid])S=Object.assign(S,s)}catch(e){}
+let S={pid:null,side:"R",count:"1-1",prev:null,sortK:2,bid:null};
+const HIT=DATA.hitters||{};
+const hids=Object.keys(HIT).sort((a,b)=>HIT[a].name.localeCompare(HIT[b].name));
+const byHLabel={};
+const hlabel=id=>`${HIT[id].name} (${HIT[id].stand.join("/")})`;
+$("hlist").innerHTML=hids.map(id=>{byHLabel[hlabel(id)]=id;return `<option value="${hlabel(id)}"></option>`}).join("");
+const shards={};
+function loadShard(pid){const k=(+pid)%DATA.shards;if(k in shards)return;shards[k]=null;
+  fetch(`adj/adj_${String(k).padStart(2,"0")}.json`).then(r=>r.json()).then(j=>{shards[k]=j;render()}).catch(()=>{delete shards[k]})}
+function adj(){if(!S.bid)return null;const sh=shards[(+S.pid)%DATA.shards];if(!sh)return undefined;return (sh[S.pid]&&sh[S.pid][S.side]&&sh[S.pid][S.side][S.bid])||false}
+try{const s=JSON.parse(localStorage.getItem("seqState")||"null");if(s&&DATA.pitchers[s.pid])S=Object.assign(S,s);if(S.bid&&!HIT[S.bid])S.bid=null}catch(e){}
 if(!S.pid){
   // Start on the pitcher with the most 2026 pitches.
   S.pid=ids.reduce((a,b)=>DATA.pitchers[b].n>DATA.pitchers[a].n?b:a);
@@ -177,12 +192,18 @@ function save(){try{localStorage.setItem("seqState",JSON.stringify(S))}catch(e){
 
 function cur(){const p=DATA.pitchers[S.pid];if(!p.sides[S.side])S.side=Object.keys(p.sides)[0];return p.sides[S.side]}
 function prevFor(count,sd){return count==="0-0"?"none":(sd.types.includes(S.prev)?S.prev:sd.types[0])}
+// v = [swing, whiff, csw, deception, hitter]; CSW includes the hitter adjustment when one is loaded.
+function vals(row,count,sd){const A=adj();const out={};for(const t in row){const a=A&&A[count]?A[count][sd.types.indexOf(t)]:0;const v=row[t];out[t]=[v[0],v[1],v[2]+a,v[3]||0,a]}return out}
 function bestOf(row,k){let b=null;for(const t in row)if(!b||row[t][k]>row[b][k])b=t;return b}
 
 function render(){
   const p=DATA.pitchers[S.pid];const sd=cur();
   $("q").value=label(S.pid);
   $("pmeta").textContent=`${p.n.toLocaleString()} pitches in 2026 · mix vs ${S.side}HH: `+sd.types.map((t,i)=>`${t} ${Math.round(sd.usage[i]*100)}%`).join(", ");
+  if(S.bid){loadShard(S.pid);const st=HIT[S.bid].stand;if(st.length===1&&p.sides[st[0]])S.side=st[0];else if(st.length>1){const o=p.throws==="R"?"L":"R";if(p.sides[o])S.side=o}}
+  const A=adj();
+  $("hq").value=S.bid?hlabel(S.bid):"";
+  $("hmeta").textContent=!S.bid?"Pick a hitter to tailor the picks to him":A===undefined?"Loading hitter adjustments…":A===false?`No adjustment for ${HIT[S.bid].name} vs this pitcher from the ${S.side} side; showing an average hitter`:`Tailored to ${HIT[S.bid].name}`;
   $("side").innerHTML=["R","L"].map(s=>`<button type="button" aria-pressed="${s===S.side}" ${p.sides[s]?"":"disabled"} data-s="${s}">${s}HH</button>`).join("");
   if(S.count!=="0-0")S.prev=prevFor(S.count,sd);
   // Count board with the top pick per count, given the selected previous pitch.
@@ -190,7 +211,7 @@ function render(){
   for(let s=0;s<3;s++){
     h+=`<span class="ax">${s} S</span>`;
     for(let b=0;b<4;b++){
-      const c=`${b}-${s}`;const row=sd.grid[c][c==="0-0"?"none":prevFor(c,sd)];const t=bestOf(row,S.sortK);
+      const c=`${b}-${s}`;const row=vals(sd.grid[c][c==="0-0"?"none":prevFor(c,sd)],c,sd);const t=bestOf(row,S.sortK);
       h+=`<button type="button" data-c="${c}" aria-pressed="${c===S.count}" aria-label="Count ${c}, top pick ${NAMES[t]||t}"><span class="c">${c}</span><span class="t">${sw(t)}${t}</span></button>`;
     }
   }
@@ -199,33 +220,35 @@ function render(){
   $("prev").innerHTML=sd.types.map(t=>`<button type="button" aria-pressed="${!first&&t===S.prev}" ${first?"disabled":""} data-p="${t}">${sw(t)}${t}</button>`).join("");
   $("prevNote").textContent=first?"0-0 is the first pitch of the at-bat, so there's no previous pitch.":`Previous: ${NAMES[S.prev]||S.prev} at its average location`;
   // Ranked table
-  const row=sd.grid[S.count][first?"none":S.prev];
+  const row=vals(sd.grid[S.count][first?"none":S.prev],S.count,sd);
   const list=Object.keys(row).sort((a,b)=>row[b][S.sortK]-row[a][S.sortK]);
   const max=Math.max(...list.map(t=>row[t][2]),1);
-  $("rankTitle").textContent=`Next pitch · ${S.count}${first?"":` after ${S.prev}`} vs ${S.side}HH`;
+  $("rankTitle").textContent=`Next pitch · ${S.count}${first?"":` after ${S.prev}`} vs ${A?HIT[S.bid].name:S.side+"HH"}`;
   $("rank").querySelector("tbody").innerHTML=list.map((t,i)=>{const v=row[t];const ui=sd.types.indexOf(t);
     return `<tr class="${i===0?"top":""}"><td class="pt"><span class="rank">${i+1}</span>${sw(t)}<span>${NAMES[t]||t} <span class="use">${Math.round(sd.usage[ui]*100)}%</span></span></td>
     <td><span class="bar"><i style="width:${(v[2]/max*100).toFixed(1)}%"></i></span>${v[2].toFixed(1)}</td><td>${v[1].toFixed(1)}</td><td>${v[0].toFixed(1)}</td>
-    <td class="lift ${v[3]>0.05?"pos":v[3]<-0.05?"neg":""}">${v[3]>0?"+":""}${v[3].toFixed(1)}</td></tr>`}).join("");
+    <td class="lift ${v[3]>0.05?"pos":v[3]<-0.05?"neg":""}">${v[3]>0?"+":""}${v[3].toFixed(1)}</td>
+    <td class="lift ${v[4]>0.05?"pos":v[4]<-0.05?"neg":""}">${A?(v[4]>0?"+":"")+v[4].toFixed(1):"–"}</td></tr>`}).join("");
   document.querySelectorAll("#rank th.sortable").forEach(th=>{if(+th.dataset.k===S.sortK)th.setAttribute("aria-sort","descending");else th.removeAttribute("aria-sort")});
   // Matrix
   const mx=$("mx");
   if(first){mx.innerHTML=`<tr><td class="empty" style="width:auto;cursor:default">Pick a count other than 0-0 to compare previous pitches.</td></tr>`;$("mxNote").textContent="";$("mxLo").textContent=$("mxHi").textContent="";return}
-  const g=sd.grid[S.count];const vals=[];sd.types.forEach(a=>sd.types.forEach(b=>vals.push(g[a][b][2])));
-  const lo=Math.min(...vals),hi=Math.max(...vals);
+  const g={};sd.types.forEach(a=>g[a]=vals(sd.grid[S.count][a],S.count,sd));const all=[];sd.types.forEach(a=>sd.types.forEach(b=>all.push(g[a][b][2])));
+  const lo=Math.min(...all),hi=Math.max(...all);
   const mix=x=>`color-mix(in srgb, var(--accent) ${Math.round(10+80*(hi>lo?(x-lo)/(hi-lo):0.5))}%, var(--cell))`;
   const ink=x=>(hi>lo?(x-lo)/(hi-lo):0.5)>0.55?"var(--bg)":"var(--ink)";
   let m='<tr><th></th>'+sd.types.map(t=>`<th>${sw(t)} ${t}</th>`).join("")+'</tr>';
   sd.types.forEach(a=>{const b=bestOf(g[a],2);
     m+=`<tr><th class="rowh">after ${a}</th>`+sd.types.map(t=>{const v=g[a][t][2];return `<td data-p="${a}" class="${t===b?"best":""} ${a===S.prev?"sel":""}" style="background:${mix(v)};color:${ink(v)}" title="${t} after ${a}: CSW ${v.toFixed(1)}%">${v.toFixed(1)}</td>`}).join("")+'</tr>'});
   mx.innerHTML=m;
-  $("mxNote").textContent=`${S.count} vs ${S.side}HH`;
+  $("mxNote").textContent=`${S.count} vs ${A?HIT[S.bid].name:S.side+"HH"}`;
   $("mxLo").textContent=lo.toFixed(1);$("mxHi").textContent=hi.toFixed(1);
   $("ramp").style.background=`linear-gradient(90deg, ${mix(lo)}, ${mix(hi)})`;
 }
 
 $("q").addEventListener("change",e=>{const id=byLabel[e.target.value];if(id){S.pid=id;save();render()}});
-$("side").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&!b.disabled){S.side=b.dataset.s;save();render()}});
+$("side").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&!b.disabled){S.side=b.dataset.s;if(S.bid&&!HIT[S.bid].stand.includes(S.side))S.bid=null;save();render()}});
+$("hq").addEventListener("change",e=>{const v=e.target.value.trim();if(!v){S.bid=null;save();render();return}const id=byHLabel[v];if(id){S.bid=id;save();render()}});
 $("board").addEventListener("click",e=>{const b=e.target.closest("button");if(b){S.count=b.dataset.c;save();render()}});
 $("prev").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&!b.disabled){S.prev=b.dataset.p;save();render()}});
 $("mx").addEventListener("click",e=>{const td=e.target.closest("td[data-p]");if(td){S.prev=td.dataset.p;save();render()}});

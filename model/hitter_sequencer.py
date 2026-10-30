@@ -310,7 +310,8 @@ def production():
     bat_tau = both.groupby("batter").bat_tau.last()
     hitters = batter_table(both, fitted.tau_fit if passed else bat_tau, tau_avg)
     page = hitters.index[hitters.n >= PAGE_MIN_PITCHES]
-    stand = d26[d26.batter.isin(page)].groupby("batter").stand.agg(lambda x: set(x.astype(str)))
+    seen = d26[d26.batter.isin(page)]
+    stand = seen.stand.astype(str).groupby(seen.batter).agg(lambda x: set(x))
     models = train(both, COLS_H)
     avg = average_hitter(hitters, both, tau_avg)
     batters_for = lambda pid, side: [b for b in page if side in stand.get(b, set())]
