@@ -145,9 +145,10 @@ def pitcher_sides(d26):
                 sub["pitch_type"] = sub.pitch_type.astype(str)
                 yield pid, side, sub, types, use
 
-def build(models, fit_on, d26, cats, hitters, avg, batters_for):
+def build(models, fit_on, d26, cats, hitters, avg, batters_for, type_median=None):
     """Side-only grid (average hitter) and batter adjustments, per pitcher x side.
-    batters_for(pid, side) -> list of hitter ids to compute adjustments for."""
+    batters_for(pid, side) -> list of hitter ids to compute adjustments for. With type_median (LOOK
+    features by pitch type), the grid also carries the deception lift, as in sequencing.py."""
     base, tables = Q.usage_tables(d26)
     prev_desc = Q.typical_prev_desc(fit_on)
     medians = pd.Series({"bat_whiff_rate": avg.bat_whiff_rate, "bat_swing_rate": avg.bat_swing_rate})
@@ -160,11 +161,16 @@ def build(models, fit_on, d26, cats, hitters, avg, batters_for):
         cells["csw_p"] = models["csw"].predict(cells[COLS_H])
         cells["sw_p"] = models["swing"].predict(cells[COLS_H])
         cells["wh_p"] = cells.sw_p * models["whiff"].predict(cells[COLS_H])
-        g = cells.groupby(["_count", "_prev", "_type"], sort=False)[["sw_p", "wh_p", "csw_p"]].mean()
+        cells["lift"] = 0.0
+        if type_median is not None:
+            cf = cells.copy()
+            cf[Q.LOOK] = type_median.reindex(cells.pitch_type.astype(str)).to_numpy()
+            cells["lift"] = cells.csw_p - models["csw"].predict(cf[COLS_H])
+        g = cells.groupby(["_count", "_prev", "_type"], sort=False)[["sw_p", "wh_p", "csw_p", "lift"]].mean()
         grid = {}
         for (count, prev, t), r in g.iterrows():
             grid.setdefault(count, {}).setdefault(prev, {})[t] = [round(r.sw_p * 100, 1), round(r.wh_p * 100, 1),
-                                                                 round(r.csw_p * 100, 1)]
+                                                                 round(r.csw_p * 100, 1), round(r.lift * 100, 1)]
         out.setdefault(pid, {})[side] = {"types": types, "usage": [round(use[t] / len(sub), 3) for t in types], "grid": grid}
 
         # Adjustment rows: previous pitch = his primary fastball to this side (none at 0-0).
@@ -308,7 +314,9 @@ def production():
     models = train(both, COLS_H)
     avg = average_hitter(hitters, both, tau_avg)
     batters_for = lambda pid, side: [b for b in page if side in stand.get(b, set())]
-    grid, adj = build(models, both, d26, cats, hitters, avg, batters_for)
+    type_median = d26.groupby("pitch_type", observed=True)[Q.LOOK].median()
+    type_median.index = type_median.index.astype(str)
+    grid, adj = build(models, both, d26, cats, hitters, avg, batters_for, type_median)
     who = Q.names(set(grid) | set(page))
     out = {"counts": Q.COUNTS, "pitchers": {}, "shards": N_SHARDS,
            "hitters": {str(int(b)): {"name": who.get(int(b), str(b)), "stand": sorted(stand.get(b, set()))} for b in page}}
