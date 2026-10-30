@@ -1,0 +1,235 @@
+<title>Pre-Game Pitch Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an advance scouting packet. Matchup header, where the plan breaks from habit, then one card per hitter in batting order with a balls x strikes grid. Same paper and type as the game report. */
+:root {
+  --paper: #f6f7f4; --card: #ffffff; --ink: #1b2126; --muted: #5f6b70; --rule: #d9ded9;
+  --accent: #df4601; --accent-soft: #fbe3d6; --good: #1f7a4d; --good-soft: #dcefe4; --bad: #a3312a; --bad-soft: #f6dedb;
+  --t1: #c0392b; --t2: #2b6cb0; --t3: #6b5aa6; --t4: #3d7d74; --t5: #a87a10; --t6: #8a8a7a;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
+  --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
+  --t1: #ef7d6f; --t2: #6ea8e6; --t3: #a998e0; --t4: #6fbfb2; --t5: #e3b341; --t6: #a5a596; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #13171a; --card: #1b2024; --ink: #e8ece9; --muted: #98a3a7; --rule: #2e353a;
+  --accent: #ff7a3d; --accent-soft: #3a2418; --good: #5cc28d; --good-soft: #17301f; --bad: #ef8a80; --bad-soft: #3a1f1c;
+  --t1: #ef7d6f; --t2: #6ea8e6; --t3: #a998e0; --t4: #6fbfb2; --t5: #e3b341; --t6: #a5a596; color-scheme: dark }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.35rem; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 .78rem var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.num, td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+section, header { display: grid; gap: 14px; }
+.lede { color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.facts div { display: grid; }
+.facts b { font: 600 1.6rem var(--display); }
+.facts span { font-size: .8rem; color: var(--muted); }
+.tbl { overflow-x: auto; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+th { font: 600 .72rem var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.pt { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.pt i { width: 10px; height: 10px; border-radius: 2px; flex: none; background: var(--c); }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; display: grid; gap: 8px; }
+.side-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.side-tabs button, .hitter summary { font: inherit; }
+.side-tabs button { font: 500 .85rem var(--body); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); cursor: pointer; }
+.side-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lineup { display: grid; gap: 14px; }
+.hitter { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; }
+.hitter > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: baseline; }
+.hitter > summary::-webkit-details-marker { display: none; }
+.slot { font: 700 1.9rem/1 var(--display); color: var(--muted); grid-row: span 2; }
+.who { font: 600 1.35rem var(--display); }
+.who small { font: 500 .8rem var(--body); color: var(--muted); margin-left: 6px; }
+.stake { font: 600 1.25rem var(--display); text-align: right; white-space: nowrap; }
+.stake small { display: block; font: 400 .72rem var(--body); color: var(--muted); }
+.gist { grid-column: 2 / 4; color: var(--muted); font-size: .9rem; }
+.flag { display: inline-block; font: 600 .68rem var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; background: var(--bad-soft); color: var(--bad); margin-left: 6px; vertical-align: 2px; }
+.body { padding: 0 16px 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); align-items: start; }
+@media (max-width: 760px) { .body { grid-template-columns: minmax(0, 1fr); } .hitter > summary { grid-template-columns: auto 1fr; } .stake { grid-column: 2; text-align: left; } .gist { grid-column: 1 / 3; } }
+.grid { display: grid; grid-template-columns: 34px repeat(3, minmax(0, 1fr)); gap: 4px; font-size: .82rem; }
+.grid .h { font: 600 .7rem var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: end; justify-content: center; }
+.grid .v { justify-content: flex-start; align-items: center; }
+.cell { border: 1px solid var(--rule); border-radius: 4px; padding: 6px 6px 5px; display: grid; gap: 1px; background: var(--paper); cursor: pointer; text-align: left; color: var(--ink); font: inherit; min-height: 54px; }
+.cell[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: -1px; }
+.cell.dev { background: var(--accent-soft); border-color: var(--accent); }
+.cell .pk { font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.cell .pk i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
+.cell .hb { font-size: .7rem; color: var(--muted); }
+.cell .d { font: 500 .72rem var(--mono); color: var(--accent); }
+.legend { font-size: .78rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--rule); background: var(--paper); }
+.legend .ldev::before { background: var(--accent-soft); border-color: var(--accent); }
+.detail h4 { margin: 0 0 6px; font: 600 1.05rem var(--display); }
+.detail td.best { font-weight: 600; }
+.bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--good); vertical-align: middle; margin-left: 6px; }
+.bar.neg { background: var(--bad); }
+.method { display: grid; gap: 10px; font-size: .9rem; color: var(--muted); }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 75ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="title"></h1>
+    <p class="lede" id="lede"></p>
+    <div class="facts" id="facts"></div>
+  </header>
+
+  <section>
+    <h2>Where the plan breaks from habit</h2>
+    <p class="lede">Most of the time the plan agrees with what he already throws. These are the counts where it doesn't, ranked by runs at stake: how much the model's pick beats his usual pitch there, times how often a plate appearance reaches that count.</p>
+    <div class="callout"><p>These are the model's own estimates, and they run high. In the 2026 season test, throwing the model's pick instead of the pitcher's habit saved under 0.1 runs per 100 pitches, and that gap was within noise. Read the ranking as where to look, not as runs in the bank.</p></div>
+    <div class="tbl"><table id="dev"></table></div>
+  </section>
+
+  <section>
+    <h2>Arsenal</h2>
+    <div class="side-tabs" id="sideTabs" role="group" aria-label="Batter side"></div>
+    <div class="tbl"><table id="arsenal"></table></div>
+    <p class="lede">Deception is the CSW points the hitter's-eye features add to each pitch over a typical pitch of that type. It describes how the pitch looks; it is not a skill rating.</p>
+  </section>
+
+  <section>
+    <h2>Lineup plan</h2>
+    <p class="lede">One card per hitter in batting order. The grid shows the pick in every count, balls down and strikes across. Shaded counts are where the pick differs from his habit. Tap a count to see every pitch.</p>
+    <div class="lineup" id="lineup"></div>
+  </section>
+
+  <section class="method">
+    <h2>How this was made</h2>
+    <ul id="method"></ul>
+  </section>
+</div>
+
+<script>
+const D = __DATA__;
+const NAMES = {FF: "Four-seam", SI: "Sinker", FC: "Cutter", CH: "Changeup", ST: "Sweeper", SL: "Slider", CU: "Curveball",
+  KC: "Knuckle curve", FS: "Splitter", SV: "Slurve", FO: "Forkball", KN: "Knuckleball", CS: "Slow curve"};
+const COUNTS = ["0-0","0-1","0-2","1-0","1-1","1-2","2-0","2-1","2-2","3-0","3-1","3-2"];
+const P = D.pitcher, G = D.game;
+const allTypes = [...new Set(Object.values(D.sides).flatMap(s => s.types))];
+const color = t => `var(--t${Math.min(allTypes.indexOf(t), 5) + 1})`;
+const nm = t => NAMES[t] || t;
+const pt = t => `<span class="pt" style="--c:${color(t)}"><i></i>${nm(t)}</span>`;
+const sgn = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const fmtDate = s => new Date(s + "T12:00:00").toLocaleDateString("en-US", {month: "long", day: "numeric", year: "numeric"});
+const sideName = s => s === "R" ? "right-handed hitters" : "left-handed hitters";
+
+const mine = G.teams.away.starter === P.id ? "away" : "home";
+const opp = G.teams[mine === "away" ? "home" : "away"];
+document.getElementById("eyebrow").textContent = `Pre-game plan · ${fmtDate(G.date)} · ${G.venue}`;
+document.getElementById("title").textContent = `${P.name} vs. the ${opp.name.split(" ").slice(-1)[0]}`;
+const cutoff = new Date(new Date(D.cutoff + "T12:00:00") - 864e5).toLocaleDateString("en-US", {month: "long", day: "numeric"});
+document.getElementById("lede").textContent =
+  `${G.teams[mine].name} at ${G.teams[mine === "away" ? "home" : "away"].name}. What ${P.name.split(" ").slice(-1)[0]} should throw each ${opp.abbr} hitter in every count, ` +
+  `using only pitches through ${cutoff}. Picks come from the standard pitch model, ranked by runs saved; swing and whiff forecasts and deception come from the perceptual model.`;
+const hs = D.hitters, totalStake = hs.reduce((a, h) => a + h.stake, 0) / hs.length;
+const devCount = hs.reduce((a, h) => a + COUNTS.filter(c => h.counts[c].pick !== h.counts[c].habit).length, 0);
+document.getElementById("facts").innerHTML = [
+  [P.throws === "L" ? "LHP" : "RHP", "throws"],
+  [P.n26.toLocaleString(), "2026 pitches before today"],
+  [`${devCount} of ${hs.length * 12}`, "hitter-counts where the plan differs from habit"],
+  [sgn(totalStake, 2), "model runs saved per 100 PA vs habit, lineup average"],
+].map(([b, s]) => `<div><b class="num">${b}</b><span>${s}</span></div>`).join("");
+
+// Where the plan breaks from habit
+const devs = hs.flatMap(h => COUNTS.map(c => ({h, c, x: h.counts[c], at: D.reach[c] * h.counts[c].delta})))
+  .filter(r => r.x.pick !== r.x.habit).sort((a, b) => b.at - a.at).slice(0, 10);
+document.getElementById("dev").innerHTML = `<thead><tr><th>Hitter</th><th>Count</th><th>Throw</th><th>Instead of</th>
+  <th class="n">Runs saved / 100 pitches</th><th class="n">Reached in</th><th class="n">Per 100 PA</th></tr></thead><tbody>` +
+  devs.map(r => `<tr><td>${esc(r.h.name)}</td><td class="n">${r.c}</td><td>${pt(r.x.pick)}</td><td>${pt(r.x.habit)}</td>
+  <td class="n">${sgn(r.x.delta, 1)}</td><td class="n">${Math.round(D.reach[r.c] * 100)}% of PA</td><td class="n">${sgn(r.at, 2)}</td></tr>`).join("") + "</tbody>";
+
+// Arsenal
+const sides = ["R", "L"].filter(s => D.sides[s]);
+let side = sides[0];
+function arsenal() {
+  const S = D.sides[side], avg = S.average.counts;
+  const lift = t => COUNTS.reduce((a, c) => a + avg[c].cells[t][4], 0) / COUNTS.length;
+  const picks = t => COUNTS.filter(c => avg[c].pick === t).join(", ") || "—";
+  document.getElementById("sideTabs").innerHTML = sides.map(s =>
+    `<button type="button" aria-pressed="${s === side}" data-s="${s}">vs ${s === "R" ? "RHH" : "LHH"} · ${D.sides[s].n.toLocaleString()} pitches</button>`).join("");
+  document.getElementById("arsenal").innerHTML = `<thead><tr><th>Pitch</th><th class="n">Usage</th><th class="n">Velo (mph)</th>
+    <th class="n">Horiz. break (in)</th><th class="n">Ride (in)</th><th class="n">Deception (CSW pts)</th><th>Model pick vs an average hitter in</th></tr></thead><tbody>` +
+    S.types.map(t => { const a = S.arsenal[t]; return `<tr><td>${pt(t)}</td><td class="n">${Math.round(S.usage[t] * 100)}%</td>
+    <td class="n">${a.mph.toFixed(1)}</td><td class="n">${sgn(a.hb_in, 1)}</td><td class="n">${sgn(a.ivb_in, 1)}</td>
+    <td class="n">${sgn(lift(t), 1)}</td><td class="num">${picks(t)}</td></tr>`; }).join("") + "</tbody>";
+}
+document.getElementById("sideTabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { side = b.dataset.s; arsenal(); } });
+arsenal();
+
+// Lineup cards
+function gist(h) {
+  const k = h.counts, first = k["0-0"].pick;
+  const two = ["0-2", "1-2", "2-2", "3-2"].map(c => k[c].pick);
+  const put = two.sort((a, b) => two.filter(x => x === b).length - two.filter(x => x === a).length)[0];
+  const behind = k["2-0"].pick === k["3-1"].pick ? k["2-0"].pick : `${k["2-0"].pick}/${k["3-1"].pick}`;
+  return `Open with ${nm(first).toLowerCase()}. Behind in the count: ${behind.split("/").map(nm).join(" or ").toLowerCase()}. Two strikes: ${nm(put).toLowerCase()}.`;
+}
+function detail(h, c) {
+  const x = h.counts[c], S = D.sides[h.bats];
+  const rows = S.types.map(t => [t, ...x.cells[t]]).sort((a, b) => b[1] - a[1]);
+  const top = rows[0][1], scale = Math.max(...rows.map(r => Math.abs(r[1] - rows[rows.length - 1][1]))) || 1;
+  return `<h4>${c} count · reached in ${Math.round(D.reach[c] * 100)}% of plate appearances</h4>
+  <div class="tbl"><table><thead><tr><th>Pitch</th><th class="n">His use here</th><th class="n">Runs saved / 100</th><th class="n">CSW</th><th class="n">Swing</th><th class="n">Whiff</th><th class="n">Deception</th></tr></thead><tbody>` +
+  rows.map(([t, rs, csw, sw, wh, lift]) => `<tr><td class="${t === x.pick ? "best" : ""}">${pt(t)}${t === x.pick ? ' <small class="lede">pick</small>' : ""}${t === x.habit ? ' <small class="lede">habit</small>' : ""}</td>
+    <td class="n">${Math.round(x.use[t] * 100)}%</td><td class="n${t === x.pick ? " best" : ""}">${sgn(rs, 2)}</td><td class="n">${csw.toFixed(0)}%</td><td class="n">${sw.toFixed(0)}%</td><td class="n">${wh.toFixed(0)}%</td><td class="n">${sgn(lift, 1)}</td></tr>`).join("") +
+  `</tbody></table></div>` + (x.off_menu ? `<p class="lede">The model rates ${nm(x.off_menu).toLowerCase()} higher here, but he throws it in under 5% of these counts, so it is not the pick.</p>` : "");
+}
+function card(h) {
+  const k = h.counts;
+  const cells = [0, 1, 2, 3].map(b => `<div class="h v">${b}</div>` + [0, 1, 2].map(s => {
+    const c = `${b}-${s}`, x = k[c], dev = x.pick !== x.habit;
+    return `<button type="button" class="cell${dev ? " dev" : ""}" data-c="${c}" aria-pressed="${c === "0-0"}" aria-label="${c}: ${nm(x.pick)}">
+      <span class="pk" style="--c:${color(x.pick)}"><i></i>${x.pick}</span>
+      ${dev ? `<span class="hb">not ${x.habit}</span><span class="d">${sgn(x.delta, 1)}</span>` : `<span class="hb">${c}</span>`}</button>`;
+  }).join("")).join("");
+  const el = document.createElement("details");
+  el.className = "hitter";
+  if (h.slot <= 1) el.open = true;
+  el.innerHTML = `<summary><span class="slot">${h.slot}</span>
+    <span class="who">${esc(h.name)}<small>${h.pos} · bats ${h.switch ? "S, " + h.bats + " today" : h.bats} · ${h.seen.toLocaleString()} pitches seen</small>${h.low_sample ? '<span class="flag">small sample</span>' : ""}</span>
+    <span class="stake num">${sgn(h.stake, 2)}<small>runs / 100 PA vs habit</small></span>
+    <span class="gist">${gist(h)}</span></summary>
+    <div class="body"><div><div class="grid"><div class="h"></div><div class="h">0 str</div><div class="h">1 str</div><div class="h">2 str</div>${cells}</div>
+    <div class="legend"><span>Plan matches habit</span><span class="ldev">Plan differs (runs saved / 100 pitches vs habit)</span></div></div>
+    <div class="detail">${detail(h, "0-0")}</div></div>`;
+  el.querySelector(".grid").addEventListener("click", e => {
+    const b = e.target.closest(".cell"); if (!b) return;
+    el.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", x === b));
+    el.querySelector(".detail").innerHTML = detail(h, b.dataset.c);
+  });
+  return el;
+}
+const lu = document.getElementById("lineup");
+hs.forEach(h => lu.appendChild(card(h)));
+
+document.getElementById("method").innerHTML = [
+  `Fitted on every 2025 regular-season pitch plus 2026 pitches before ${fmtDate(D.cutoff)}. Nothing from this game or later was used.`,
+  `Picks: the standard pitch model (stuff, location, count, previous pitch, the hitter's swing, whiff and chase rates by pitch class), ranked by expected run value. In testing it tied the perceptual model on picks and beat simple rules, FanGraphs Stuff+, Pitching+ and PitchingBot.`,
+  `Swing, whiff and deception numbers come from the perceptual model, which forecast 2026 swings and whiffs better than the standard one.`,
+  `Each count averages over his real pitches of that type and over the previous pitch, weighted by how often he throws each type.`,
+  `Habit is his most-used pitch in that count against that side in 2026; with fewer than 10 pitches in a count, his most-used pitch overall.`,
+  `Picks are limited to pitches he throws at least 5% of the time in that count against that side.`,
+  `Runs saved are model estimates per 100 pitches, and picking the best of several estimates inflates them. In the 2026 test, habit was nearly as good as the model on actual runs. Hitters with fewer than 1,000 pitches seen are flagged.`,
+  `Location is not part of the pick: a test of type plus zone picks found no gain from the perceptual features.`,
+].map(s => `<li>${s}</li>`).join("");
+</script>
