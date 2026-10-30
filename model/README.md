@@ -98,3 +98,27 @@ for pitch-level and sequencing models. It does not support ranking pitchers
 by a stable Tunnel+ skill. Part of the optical-motion gain may be ball speed
 and trajectory information that the plate-based controls don't fully capture.
 That is an untested caveat.
+
+## Speed check (pre-registered, `PREREG_speed.md`)
+
+`speed_check.py` adds plate speed, flight time, and speed and flight-time
+differentials vs the previous pitch and the fastball to the controls. It runs
+2025 -> 2026 once and writes `speed_check_report.md`.
+
+- **Primary: pass.** The perceptual gain survives almost entirely:
+  - whiff | swing: 2.14 per 1000 (nulls up to 0.54)
+  - swing: 5.67 per 1000 (nulls all negative)
+
+  That keeps 117% and 97% of the original gain, so speed is not the
+  explanation.
+- **Exploratory:** adding the ball's raw position and velocity at the commit
+  point (6 numbers) to the controls gives about the same gain as all the
+  perceptual features. On top of those kinematics:
+  - optical motion adds about 0 for whiffs and 0.7 for swings
+  - the other perceptual blocks together still add 0.9 (whiff) and 2.0 (swing)
+
+Reading: the main signal is where the ball is, and how it is moving, at the
+moment the hitter must decide. The plate-based controls miss this. It is not
+speed. Expressing it as eye-frame angular motion adds little over raw
+kinematics, but the expectation, ambiguity, fastball-prior miss and at-bat
+build-up features add something beyond it (exploratory, not pre-registered).
