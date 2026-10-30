@@ -223,9 +223,11 @@ def main():
     tr, te = season(2025), season(2026)
     cats = ["pitch_type", "stand", "p_throws", "prev_pitch_type", "prev_desc"]
     for c in cats:
-        levels = sorted(set(tr[c].astype(str)) | set(te[c].astype(str)))
-        tr[c] = pd.Categorical(tr[c].astype(str), categories=levels)
-        te[c] = pd.Categorical(te[c].astype(str), categories=levels)
+        tr[c] = tr[c].astype(object).fillna("none").astype(str)
+        te[c] = te[c].astype(object).fillna("none").astype(str)
+        levels = sorted(set(tr[c]) | set(te[c]))
+        tr[c] = pd.Categorical(tr[c], categories=levels)
+        te[c] = pd.Categorical(te[c], categories=levels)
     lines = ["# Perceptual tunnel model: 2025 -> 2026 (pre-registered, single run)", "",
              f"Train {len(tr):,} pitches (2025), test {len(te):,} (2026).", "",
              "Feature coverage in 2026 (share non-missing): "
