@@ -66,8 +66,8 @@ Every page runs in the browser with no server. [The index](https://jeffmhopkins.
 
 - For the methods in one place (feature math, model settings, every test with its pass bar and CI, and
   the comparison with FanGraphs Stuff+, Pitching+ and PitchingBot), read the
-  [methods and results review](docs/review/index.html) (a self-contained HTML page; download it and open it
-  in a browser).
+  [methods and results review](https://jeffmhopkins.github.io/polar_tunneling/review/)
+  (source: [docs/review/index.html](docs/review/index.html)).
 - To see the results rather than read them, open the [pages above](#try-it): the Pitch Sequencer is the
   one to start with.
 - To rerun a study, see [Running it](#running-it). The data is already in the repository.
@@ -102,7 +102,7 @@ The rules that matter most:
 | Does a hitter-specific sequencer help? Does per-hitter timing? | Hitter-specific picks yes (+2.9 CSW pts where they differ). Fitted timing no | [hitter sequencer](model/hitter_sequencer_report.md), [hitter timing](model/hitter_timing_report.md) |
 | Do the perceptual features change the *best* pitch, by CSW, runs or location? | No. They improve forecasts but rarely change the pick | [game](model/game_report.md), [runs](model/runs_report.md), [location](model/location_report.md) |
 
-[model/README.md](model/README.md) has every study in order, with its numbers and caveats. The [methods and results review](docs/review/index.html) puts
+[model/README.md](model/README.md) has every study in order, with its numbers and caveats. The [methods and results review](https://jeffmhopkins.github.io/polar_tunneling/review/) puts
 the definitions, test design and picker comparison on one page.
 
 ## Layout
@@ -143,6 +143,7 @@ says what it adds.
 | [Pitch Sequencer](https://jeffmhopkins.github.io/polar_tunneling/sequencer/) | `report_generation/build_sequencer.py OUT.html` | `model/sequencing.json`, `model/batter_adj/` |
 | [Game report](https://jeffmhopkins.github.io/polar_tunneling/game-report/) | `report_generation/build_game_report.py 823491 OUT.html` | `model/game_report.py`, `runs_compare.py`, `location_compare.py` |
 | [Pre-game plan](https://jeffmhopkins.github.io/polar_tunneling/pregame/rogers.html) | `report_generation/build_pregame.py 823491 669432 OUT.html` | `model/pregame_report.py` |
+| [Methods and results review](https://jeffmhopkins.github.io/polar_tunneling/review/) | Written by hand: [docs/review/index.html](docs/review/index.html) | `model/*_report.md` |
 | [Pitch Tunnel Explorer](https://jeffmhopkins.github.io/polar_tunneling/explorer/) | [report_generation/explorer](report_generation/explorer) | 2025 Statcast trajectory fits |
 
 Each page is one self-contained HTML file, except the sequencer, which loads hitter data from an `adj/`
