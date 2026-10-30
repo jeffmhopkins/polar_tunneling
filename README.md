@@ -19,14 +19,30 @@ on 2026, and every test is written down and committed before its outcome is comp
 > that history and builds the models, tests and report pages on top of it. The original outline is in
 > [docs/original_outline.md](docs/original_outline.md).
 
+## Try it
+
+<table>
+<tr>
+<td align="center" valign="top"><a href="https://jeffmhopkins.github.io/polar_tunneling/explorer/"><img src="docs/img/explorer.png" width="400" alt="Pitch Tunnel Explorer"></a><br><b><a href="https://jeffmhopkins.github.io/polar_tunneling/explorer/">Pitch Tunnel Explorer</a></b><br>Every 2025 arsenal in 3D, from the hitter's eye</td>
+<td align="center" valign="top"><a href="https://jeffmhopkins.github.io/polar_tunneling/sequencer/"><img src="docs/img/sequencer.png" width="400" alt="Pitch Sequencer"></a><br><b><a href="https://jeffmhopkins.github.io/polar_tunneling/sequencer/">Pitch Sequencer</a></b><br>Best next pitch by count, previous pitch and hitter</td>
+</tr>
+<tr>
+<td align="center" valign="top"><a href="https://jeffmhopkins.github.io/polar_tunneling/game-report/"><img src="docs/img/game-report.png" width="400" alt="Game report"></a><br><b><a href="https://jeffmhopkins.github.io/polar_tunneling/game-report/">Game report</a></b><br>Orioles at Yankees, 2026-09-25, pitch by pitch against five pickers</td>
+<td align="center" valign="top"><a href="https://jeffmhopkins.github.io/polar_tunneling/pregame/rogers.html"><img src="docs/img/pregame.png" width="400" alt="Pre-game plan"></a><br><b><a href="https://jeffmhopkins.github.io/polar_tunneling/pregame/rogers.html">Pre-game plan</a></b><br>Trevor Rogers vs the Yankees (also <a href="https://jeffmhopkins.github.io/polar_tunneling/pregame/young.html">Brandon Young</a>)</td>
+</tr>
+</table>
+
+Every page runs in the browser with no server. [The index](https://jeffmhopkins.github.io/polar_tunneling/) lists them all, and
+[Report pages](#report-pages) says how each one is built.
+
 ## For humans
 
 > [!TIP]
 > **Start with [What it found](#what-it-found)**, the one-table summary. Every row links to the report
 > behind it, and [model/README.md](model/README.md) walks through each study in the order it was run.
 
-- To see the results rather than read them, build a [report page](#report-pages): the Pitch Sequencer
-  is the one to open first.
+- To see the results rather than read them, open the [pages above](#try-it): the Pitch Sequencer is the
+  one to start with.
 - To rerun a study, see [Running it](#running-it). The data is already in the repository.
 - The project started from [the original outline](docs/original_outline.md), which is still the best
   explanation of why the hitter's-eye view matters.
@@ -103,13 +119,13 @@ says what it adds.
 
 | Page | Built by | Data from |
 |---|---|---|
-| Pitch Sequencer | `report_generation/build_sequencer.py OUT.html` | `model/sequencing.json`, `model/batter_adj/` |
-| Game report | `report_generation/build_game_report.py 823491 OUT.html` | `model/game_report.py`, `runs_compare.py`, `location_compare.py` |
-| Pre-game plan | `report_generation/build_pregame.py 823491 669432 OUT.html` | `model/pregame_report.py` |
-| Pitch Tunnel Explorer | [report_generation/explorer](report_generation/explorer) | 2025 Statcast trajectory fits |
+| [Pitch Sequencer](https://jeffmhopkins.github.io/polar_tunneling/sequencer/) | `report_generation/build_sequencer.py OUT.html` | `model/sequencing.json`, `model/batter_adj/` |
+| [Game report](https://jeffmhopkins.github.io/polar_tunneling/game-report/) | `report_generation/build_game_report.py 823491 OUT.html` | `model/game_report.py`, `runs_compare.py`, `location_compare.py` |
+| [Pre-game plan](https://jeffmhopkins.github.io/polar_tunneling/pregame/rogers.html) | `report_generation/build_pregame.py 823491 669432 OUT.html` | `model/pregame_report.py` |
+| [Pitch Tunnel Explorer](https://jeffmhopkins.github.io/polar_tunneling/explorer/) | [report_generation/explorer](report_generation/explorer) | 2025 Statcast trajectory fits |
 
 Each page is one self-contained HTML file, except the sequencer, which loads hitter data from an `adj/`
-folder copied next to it.
+folder copied next to it. The published copies live on the `gh-pages` branch.
 
 ## Data
 
