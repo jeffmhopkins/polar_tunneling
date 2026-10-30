@@ -208,3 +208,34 @@ beyond that.
 `hitter_sequencer.py --production` retrains on both seasons and writes
 `sequencing.json` and `batter_adj/` (hitters with >= 2,500 pitches seen),
 which `report_generation/build_sequencer.py` turns into the page.
+
+## Whole at-bat test (pre-registered, `PREREG_atbat.md`)
+
+`validate_atbat.py` writes `atbat_report.md`. It asks whether following the
+2025-only sequencer across a 2026 at-bat leads to more strikeouts and weaker
+contact. Adherence = the share of a PA's pitches that matched the top pick,
+minus that pitcher's usual rate in the same counts. Controls are the
+pitcher-choice ones (pitcher x side fixed effects, the batter's 2025 rates,
+outs, runners, inning, platoon, times through the order). 124,663 PAs, 265
+pitchers. Effects are per +25 pts of adherence:
+
+- **More strikeouts: pass.** K rate +1.15 pts (95% CI +0.94 to +1.34), on a
+  22.6% base.
+- **Fewer runs: pass.** xwOBA per PA -0.0043 (CI -0.0063 to -0.0024).
+  Actual wOBA -0.0064.
+- **Weaker contact: fail.** Contact xwOBA +0.0003 (CI -0.0021 to +0.0026),
+  hard-hit rate +0.15 pts. The picks are not hit harder, but not weaker either.
+  At the pitch level, balls in play off top picks have the same xwOBA as
+  other pitches (-0.002, CI -0.009 to +0.005).
+- Walks don't change (-0.05 pts).
+- The K gain is what the per-pitch CSW gain predicts (+1.21 pts implied),
+  so CSW carries through to the at-bat result without washing out, and
+  nothing extra appears beyond it.
+- Following the tool on the first pitch alone gives a smaller, not
+  significant effect (K +0.38 pts, CI -0.17 to +0.85). The gain builds over
+  the at-bat.
+- Exploratory (not pre-registered): within same-length at-bats the effect is
+  a little smaller (K +0.86 pts, xwOBA -0.0031) and rises across quartiles.
+
+So the tool's value over an at-bat comes through strikeouts. It has no
+contact-quality signal, which is what a contact term in the model would add.
