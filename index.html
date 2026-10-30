@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polar Tunneling</title>
+<style>
+:root{--bg:#fafaf8;--fg:#1d1d1b;--muted:#5f5f5a;--card:#fff;--line:#e3e2dc;--accent:#2f5d8a}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe6;--muted:#a3a29c;--card:#1f1f1d;--line:#33332f;--accent:#8fb6dd}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:0 auto;padding:48px 16px}
+h1{font-size:2rem;margin:0 0 .25rem}p.lead{color:var(--muted);margin:0 0 2rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+a.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;color:inherit;text-decoration:none}
+a.card:hover{border-color:var(--accent)}a.card h2{font-size:1.05rem;margin:0 0 .35rem;color:var(--accent)}a.card p{margin:0;color:var(--muted);font-size:.93rem}
+footer{margin-top:2.5rem;color:var(--muted);font-size:.9rem}footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<h1>Polar Tunneling</h1>
+<p class="lead">Pitch tunneling measured from the hitter's eye, and the tools built on it. Models train on 2025 Statcast data and are tested once on 2026.</p>
+<div class="grid">
+<a class="card" href="explorer/"><h2>Pitch Tunnel Explorer</h2><p>Every 2025 pitcher's arsenal in 3D, with what the hitter sees at the decision point.</p></a>
+<a class="card" href="sequencer/"><h2>Pitch Sequencer</h2><p>Best next pitch for any pitcher, count, previous pitch and hitter, by runs saved and CSW.</p></a>
+<a class="card" href="game-report/"><h2>Game report</h2><p>Orioles at Yankees, 2026-09-25: every pitch against what each model would have thrown.</p></a>
+<a class="card" href="pregame/rogers.html"><h2>Pre-game plan: Rogers</h2><p>Trevor Rogers vs the Yankees lineup, 2026-09-25, built from data known that morning.</p></a>
+<a class="card" href="pregame/young.html"><h2>Pre-game plan: Young</h2><p>Brandon Young vs the Yankees lineup, 2026-09-25.</p></a>
+</div>
+<footer>Code, data and every pre-registered test: <a href="https://github.com/jeffmhopkins/polar_tunneling">jeffmhopkins/polar_tunneling</a>. Started by <a href="https://github.com/ginsy-codes">ginsy-codes</a>.</footer>
+</main>
+</body>
+</html>
